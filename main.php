@@ -1,61 +1,10 @@
 <?php
-class contract {
-	private $parties = [];
-	private $terms;
-
+class block {
 	private $id;
 	private $hash;
 	private $prevHash;
 	private $timestamp;
-
-	public function __construct($x = null) {
-		if(!empty($x)) {
-			$this->setTerms($x);
-		}
-	}
-
-	public function __toString() {
-		return json_encode(
-			$this->getData()
-			+ array (
-				'id' => $this->getId(),
-				'hash' => $this->getHash(),
-				'prevHash' => $this->getPrevHash(),
-				'timestamp' => $this->getTimestamp()
-			)
-		, JSON_PRETTY_PRINT);
-	}
-
-	public function getData() {
-		return array(
-			'parties' => $this->parties,
-			'terms' => $this->terms
-		);
-	}
-
-	public function setParties($x) {
-		$this->parties = $x;
-	}
-	
-	public function addParty() {
-		$args = func_get_args();
-		foreach($args as $arg) {
-			if(is_string($arg)) {
-				$this->parties[] = $arg;
-			} else {
-				$this->parties[] = $arg->getAddress();
-			}
-		}
-		$this->parties = array_values($this->parties);
-	}
-
-	public function setTerms($terms) {
-		$this->terms = $terms;
-	}
-
-	public function getTerms() {
-		return $this->terms();
-	}
+	# data?
 
 	public function getId() {
 		return $this->id;
@@ -67,6 +16,19 @@ class contract {
 
 	public function getHash() {
 		return $this->hash;
+	}
+
+	public function getData() {
+		return array (
+			'id' => $this->getId(),
+			'hash' => $this->getHash(),
+			'prevHash' => $this->getPrevHash(),
+			'timestamp' => $this->getTimestamp()
+		);
+	}
+
+	public function __toString() {
+		return json_encode($this->getData(), JSON_PRETTY_PRINT);
 	}
 
 	public function generateHash() {
@@ -94,6 +56,53 @@ class contract {
 		$this->setPrevHash($prev);
 		$this->generateHash();
 	}
+}
+
+class contract extends block {
+	private $parties = [];
+	private $terms;
+
+	public function __construct($x = null) {
+		if(!empty($x)) {
+			$this->setTerms($x);
+		}
+	}
+
+	public function getData() {
+		return array(
+			'parties' => $this->parties,
+			'terms' => $this->terms
+		) + parent::getData();
+	}
+
+	public function setParties($x) {
+		$this->parties = $x;
+	}
+	
+	public function addParty() {
+		$args = func_get_args();
+		foreach($args as $arg) {
+			if(is_string($arg)) {
+				$this->parties[] = $arg;
+			} else {
+				$this->parties[] = $arg->getAddress();
+			}
+		}
+		$this->parties = array_values($this->parties);
+	}
+
+	public function setTerms($terms) {
+		$this->terms = $terms;
+	}
+
+	public function getTerms() {
+		return $this->terms();
+	}
+}
+
+# for appending contracts
+class addendum extends contract {
+	
 }
 
 class party {
@@ -163,10 +172,10 @@ class party {
 		return $out;
 	}
 
-	public function sign($data) {
-		$terms = $data['data'];
+	public function sign($data,$contract = true) {
+		$terms = $contract ? $data['data'] : $data;
 		openssl_sign($terms, $binary_signature, $this->getPrivateKey(), OPENSSL_ALGO_SHA1);
-		$sig = hash("sha256",$binary_signature);
+		$sig = base64_encode($binary_signature);
 		return $sig;
 	}
 }
@@ -189,17 +198,22 @@ class network {
 			'data'=>$contract->__toString(),
 			'todo'=>array(),
 			'done'=>array(),
+			'cmts'=>array(),
 		);
 		$this->lastHash = $contract->getHash();
 		$this->size++;
 		return $contract->getHash();
+	}
+
+	public function length() {
+		return count($this->contracts);
 	}
 	
 	public function get($data_addr) {
 		if(isset($this->contracts[$data_addr])) {
 			return $this->contracts[$data_addr];
 		} else {
-			throw new Exception('Address not found.');
+			throw new Exception("Address '$data_addr' not found.");
 		}
 	}
 	
@@ -208,9 +222,9 @@ class network {
 	}
 	
 	public function sign($hash,$signature,$partyAddr,$type = 'todo') {
-		$data = $this->contracts[$hash];
+		$data = $this->get($hash);
 
-		if(!openssl_verify($data['data'],$signature,$this->publicKeys[$partyAddr])) {
+		if(!openssl_verify($data['data'],base64_decode($signature),$this->publicKeys[$partyAddr])) {
 			error_log("Failed to verify signature '$signature' for address '$partyAddr' in hash '$hash'");
 			return false;
 		} elseif (!isset($data[$type]) || $type == 'data') {
@@ -222,6 +236,27 @@ class network {
 		$this->edit($hash,$data);
 
 		return true;
+	}
+
+	public function genComment($hash,$partyAddr,$type = 'comment',$comment) {
+		$cmt = array
+		(
+			'hash' => $hash,
+			'party' => $partyAddr,
+			'type' => $type,
+			'message' => $comment,
+			'timestamp' => gmdate('Y-m-d H:i:s\Z'),
+		);
+		return json_encode($cmt,JSON_PRETTY_PRINT);
+	}
+
+	public function comment($hash, $cmt,$signature) {
+		$cmt = json_decode($cmt,true);
+		$cmt['signature'] = $signature;
+
+		$data = $this->get($hash);
+		$data['cmts'][] = json_encode($cmt,JSON_PRETTY_PRINT);
+		$this->edit($hash,$data);
 	}
 }
 ?>
