@@ -61,17 +61,26 @@ class block {
 class contract extends block {
 	private $parties = [];
 	private $terms;
+	private $nonce;
+	private $deadline;
 
-	public function __construct($x = null) {
+	public function __construct($x = null,$y = null) {
 		if(!empty($x)) {
 			$this->setTerms($x);
+		}
+		if(!empty($y)) {
+			$this->setNonce($y);
 		}
 	}
 
 	public function getData() {
 		return array(
 			'parties' => $this->parties,
-			'terms' => $this->terms
+			'terms' => $this->terms,
+			'nonce' => $this->nonce,
+			'deadline' => $this->deadline,
+			# Guarantors,
+			# Arbitrators,
 		) + parent::getData();
 	}
 
@@ -96,7 +105,23 @@ class contract extends block {
 	}
 
 	public function getTerms() {
-		return $this->terms();
+		return $this->terms;
+	}
+
+	public function setNonce($nonce) {
+		$this->nonce = $nonce;
+	}
+
+	public function getNonce() {
+		return $this->nonce;
+	}
+
+	public function setDeadline($deadline) {
+		$this->deadline = $deadline;
+	}
+
+	public function getDeadline() {
+		return $this->deadline;
 	}
 }
 
@@ -165,8 +190,8 @@ class party {
 		}
 	}
 
-	public function buildContract($x = null) {
-		$out = new contract($x);
+	public function buildContract($x = null,$y = null) {
+		$out = new contract($x,$y);
 		$out->addParty($this);
 		$out->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
 		return $out;
@@ -193,11 +218,23 @@ class network {
 	}
 
 	public function put($contract) {
+		# nonce - should be at least three, and over threshold of signers
+		print_r($contract);
+		die();
+
 		$contract->finalize($this->size,$this->lastHash);
 		$this->contracts[$contract->getHash()] = array(
+			# Contract Data
 			'data'=>$contract->__toString(),
+			# Affirm Contract Terms
 			'todo'=>array(),
+			# Confirm Contract Completion
 			'done'=>array(),
+			# Dispute Contract Completion
+			'disp'=>array(),
+			# Dispute Contract Comments
+			'objs'=>array(),
+			# Miscellaneous Contract Comments
 			'cmts'=>array(),
 		);
 		$this->lastHash = $contract->getHash();
@@ -209,6 +246,15 @@ class network {
 		return count($this->contracts);
 	}
 	
+	public function hasNonce($nonce) {
+		foreach($this->contracts as $c) {
+			if($c->getNonce() == $nonce) return true;
+		}
+		return false;
+	}
+	public function getByNonce() {
+	}
+
 	public function get($data_addr) {
 		if(isset($this->contracts[$data_addr])) {
 			return $this->contracts[$data_addr];
@@ -257,6 +303,9 @@ class network {
 		$data = $this->get($hash);
 		$data['cmts'][] = json_encode($cmt,JSON_PRETTY_PRINT);
 		$this->edit($hash,$data);
+	}
+
+	public function mine() {
 	}
 }
 ?>
