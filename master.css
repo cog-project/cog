@@ -1,0 +1,15 @@
+body {
+  width:640px;
+  margin:0 auto;
+}
+h1 { font-size:26px; }
+h2 { font-size:18px; }
+
+.head {
+  border:1px solid #ccc;
+}
+@media only screen and (max-width: 768px) {
+  body { width:100%; }
+  h1 { font-size:26px; }
+  h2 { font-size:18px; }
+}
