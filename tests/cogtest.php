@@ -1,10 +1,21 @@
 <?php
 chdir(dirname(__FILE__));
 
-include '../main.php';
-include 'traits/mining.php';
+require '../main.php';
 
-function emit($message) {
+require 'traits/mining.php';
+require 'traits/network.php';
+require 'traits/party.php';
+require 'traits/contract.php';
+require 'traits/mongo.php';
+
+require 'cogtestbase.php';
+
+require 'phpunit/vendor/autoload.php';
+
+function emit($message,$verbose = false) {
+	if($verbose && !defined('VERBOSE')) return;
+
 	$str = "[".date("Y-m-d H:i:s")."]\t";
 	if(is_array($message) || is_object($message)) {
 		$str .= print_r($message,1);
@@ -16,7 +27,7 @@ function emit($message) {
 
 // TODO: Convert "fallback" FZPL phpunit test case class into library for reuse elsewhere
 
-if(!class_exists("phpunit_framework_testcase")){
+if(!class_exists("PHPUnit\Framework\TestCase") && 0){
 	error_log("WARNING: phpunit_framework_testcase does not exist.  Creating placeholder.");
 
 	class phpunit_framework_testcase {
@@ -27,66 +38,37 @@ if(!class_exists("phpunit_framework_testcase")){
 	}
 }
 
-class CogTest extends phpunit_framework_testcase {
+class CogTest extends CogTestBase {
+
+	
 	// No heavy mining in testing, so we can just use integers.
-	private $counter = 0;
+	protected $counter = 0;
 
 	function setUp() {
 		emit("Running CogTest::{$this->getName()}");
 	}
-
-	function testGenerateNonce(&$counter, &$hash) {
-		$counter = $this->counter++;
-		$hash = hash("sha256",$counter);
-		$this->assertTrue(hash("sha256",$counter) == $hash);
-	}
-
-	function testVerifyNonce($difficulty = 1, $hash = null, $bool = true, $strict = false) {
-		if(empty($hash)) {
-			$hash = $this->testGenerateNonce($difficulty);
-		}
-		$success = true;
-		for($i = 0; $i < $difficulty; $i++) {
-			if($hash[$i] != '0') {
-				$success = false;
-			}
-			if(!$success) {
-				break;
-			}
-		}
-		if($strict) {
-			$this->assertTrue($success == $bool);
-		} else {
-			return $success == bool;
-		}
-	}
 	
-	function testMineNonce($difficulty = 1) {
-		$out = null;
-		$hash = null;
-		while(1) {
-			$this->testGenerateNonce($counter,$hash);
-			$success = $this->testVerifyNonce($difficulty,$hash);
-			if($success) {
-				break;
-			}
-		}
-		$this->assertTrue(!empty($hash));
-		return $hash;
-	}
-	
-	function sign_contact_verify_increment($network,$signature,$party,$contract_addr,$flag = null) {
-		$cnt = $network->length();
-		$this->sign_contract($network,$signature,$party,$contract_addr,$flag);
-		$this->assertTrue($network->length() == $cnt + 1);
-	}
-	function sign_contract($network,$signature,$party,$contract_addr,$flag = null) {
-		$this->assertTrue(
-			$network->sign($contract_addr,$signature,$party->getAddress(),$flag)
-		);
-	}
-
 	function testSmoke($terms = array()) {
+		// Initliaze Database
+		$db = $this->testMongoCreate();
+
+		// Initialize Collection
+		try {
+			$this->testMongoCreateCollection("cogTest","blocks");
+		} catch (Exception $e) {
+			emit($e->getMessage());
+		}
+		$this->assertTrue(empty($e));
+
+		// Delete Collection
+		try {
+			$this->testMongoDropCollection("cogTest","blocks");
+		} catch (Exception $e) {
+			emit($e->getMessage());
+		}
+		$this->assertTrue(empty($e));
+
+		return; #architectural overhaul
 		$n = $this->testNetwork();
 
 		$a = $this->testParty();
@@ -138,57 +120,7 @@ class CogTest extends phpunit_framework_testcase {
 		# btw we could benefit from more signatures and more atomized transactions
 		## alas, the imperative for scarcity
 
-		print_r($c);
-		print_r($n);
+		$this->emit($c);
+		$this->emit($n);
 	}
-
-	public function testCoin() {
-		$this->testSmoke(array(
-			'party' => 'muh-address',
-			'coins' => 10,
-			'task' => 'ditch digging',
-			'due' => '2038-01-01',
-		));
-	}
-
-	public function testParty() {
-		# smoke testing keypairs so we don't suffer debugging if these ever fail
-		$this->assertTrue(class_exists("party"));
-		$p = new party();
-		$this->assertTrue($p->decrypt($p->encrypt("f00borx!!")) == "f00borx!!");
-		return $p;
-	}
-	public function testContract() {
-		$this->assertTrue(class_exists("contract"));
-		$c = new contract();
-		return $c;
-	}
-	public function testNetwork() {
-		$this->assertTrue(class_exists("network"));
-		$n = new network();
-		return $n;
-	}
-	public function testNetworkAdd($network = null,$block = null) {
-		if($network == null) {
-			$network = $this->testNetwork();
-		}
-		if($block == null) {
-			$block = $this->testBlock();
-		}
-
-		$len = $network->length();
-		$hash = $network->put($block);
-		# todo verify hash
-		$this->assertTrue($network->length() == $len + 1);
-		return $hash;
-	}
-	public function testBlock() {
-		$this->assertTrue(class_exists("block"));
-		$block = new block();
-		return $block;
-	}
-	public function testAddendum() {
-		$this->assertTrue(class_exists("addendum"));
-	}
-
 }
