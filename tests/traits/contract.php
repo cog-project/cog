@@ -16,9 +16,9 @@ trait contractTests {
 		$block = new block();
 		return $block;
 	}
-	public function testContract() {
+	public function testContract($terms = [], $nonce = null) {
 		$this->assertTrue(class_exists("contract"));
-		$c = new contract();
+		$c = new contract($terms,$nonce);
 		return $c;
 	}
 	public function testAddendum() {
