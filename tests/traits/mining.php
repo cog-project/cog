@@ -1,8 +1,9 @@
 <?php
 trait miningTests {
 	function testGenerateNonce(&$counter = 1, &$hash = null) {
-		$hash = hash("sha256",$counter);
-		$this->assertTrue(hash("sha256",$counter) == $hash);
+		$workingCounter = 'cog'.$counter;
+		$hash = hash("sha256",$workingCounter);
+		$this->assertTrue(hash("sha256",$workingCounter) == $hash);
 		emit("Nonce generated: $hash",true);
 		$counter++;
 	}
@@ -40,6 +41,13 @@ trait miningTests {
 			}
 		}
 		$this->assertTrue(!empty($hash));
+		return $hash;
+	}
+	function testMineZeroNonce() {
+		$hash = $this->testMineNonce(0);
+		for($i = 0; $i < strlen($hash); $i++) {
+			$hash[$i] = '0';
+		}
 		return $hash;
 	}
 }
