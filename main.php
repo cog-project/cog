@@ -4,6 +4,7 @@ class block {
 	private $hash;
 	private $prevHash;
 	private $timestamp;
+	
 	# data?
 
 	public function getId() {
@@ -64,7 +65,7 @@ class contract extends block {
 	private $nonce;
 	private $deadline;
 
-	public function __construct($x = null,$y = null) {
+	public function __construct($x = [],$y = null) {
 		if(!empty($x)) {
 			$this->setTerms($x);
 		}
@@ -244,6 +245,10 @@ class network {
 		$this->lastHash = $contract->getHash();
 		$this->size++;
 		return $contract->getHash();
+	}
+
+	public function getLastHash() {
+		return $this->lastHash;
 	}
 
 	public function length() {
