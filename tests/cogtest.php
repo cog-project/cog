@@ -14,7 +14,7 @@ require 'cogtestbase.php';
 require 'phpunit/vendor/autoload.php';
 
 function emit($message,$verbose = false) {
-	if($verbose && !defined('VERBOSE')) return;
+	if($verbose && (!defined('VERBOSE') || !VERBOSE)) return;
 
 	$str = "[".date("Y-m-d H:i:s")."]\t";
 	if(is_array($message) || is_object($message)) {
@@ -39,7 +39,6 @@ if(!class_exists("PHPUnit\Framework\TestCase") && 0){
 }
 
 class CogTest extends CogTestBase {
-
 	
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
@@ -47,29 +46,72 @@ class CogTest extends CogTestBase {
 	function setUp() {
 		emit("Running CogTest::{$this->getName()}");
 	}
-	
-	function testSmoke($terms = array()) {
-		// Initliaze Database
-		$db = $this->testMongoCreate();
 
-		// Initialize Collection
+	function initialize_collection() {
+		emit("Initializing db collection");
 		try {
 			$this->testMongoCreateCollection("cogTest","blocks");
 		} catch (Exception $e) {
 			emit($e->getMessage());
 		}
 		$this->assertTrue(empty($e));
+	}
 
-		// Delete Collection
+	function delete_collection() {
+		emit("Deleting db collection");
 		try {
 			$this->testMongoDropCollection("cogTest","blocks");
 		} catch (Exception $e) {
 			emit($e->getMessage());
 		}
 		$this->assertTrue(empty($e));
+	}
+	
+	function testSmoke($terms = array()) {
+		// Initliaze Database
+		$db = $this->testMongoCreate();
+
+		// Initialize Collection
+		$this->initialize_collection();
+		
+		# 0000000000000000000000000000000000000000000000000000000000000000
+
+		/* TESTS/RULES/CAVEATS:
+		- network's first prevHash should be zeroHash.
+		-- this should be assigned during object creation, retrieved from the database iff the working collection is empty.
+		-- thereafter, during initialization, network's first prevHash should :not: be zeroHash, nor should it be ever again.
+		- network "invite" command must involve one party: the inviting party.
+		-- the address, however, must be included in the terms.
+		-- we may also want to include the public key.
+		- To prevent nonce reuse, we should precede the string used to generate the hash with 'cog' or something like that;
+		- With the exception of the genesis block, party::buildContract() should be utilized.
+		*/
+
+		$network = $this->testNetwork();
+		$zeroHash = $this->testMineZeroNonce();
+		$this->assertTrue($network->getLastHash() == $zeroHash);
+		
+		$nonce = $this->testMineNonce(0);
+		# how does verification of this work in bitcoin?
+
+		$master = $this->testParty();
+
+		$genesisTerms = [
+			'action' => 'invite',
+			'params' => [
+				'address' => $master->getAddress(),
+				'public_key' => $master->getPublicKey(),
+			],
+		];
+		
+		$genesis = $this->testContract($genesisTerms,$nonce);
+
+		emit($genesis);
+
+		// Delete Collection
+		$this->delete_collection();
 
 		return; #architectural overhaul
-		$n = $this->testNetwork();
 
 		$a = $this->testParty();
 		$b = $this->testParty();
