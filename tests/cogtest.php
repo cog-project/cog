@@ -9,8 +9,6 @@ require 'traits/party.php';
 require 'traits/contract.php';
 require 'traits/mongo.php';
 
-require 'cogtestbase.php';
-
 require 'phpunit/vendor/autoload.php';
 
 function emit($message,$verbose = false) {
@@ -38,7 +36,13 @@ if(!class_exists("PHPUnit\Framework\TestCase") && 0){
 	}
 }
 
-class CogTest extends CogTestBase {
+class CogTest extends PHPUnit\Framework\TestCase {
+
+	use miningTests;
+	use networkTests;
+	use partyTests;
+	use contractTests;
+	use mongoTests;
 	
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
