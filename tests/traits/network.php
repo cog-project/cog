@@ -3,6 +3,10 @@ trait networkTests {
 	public function testNetwork() {
 		$this->assertTrue(class_exists("network"));
 		$n = new network();
+		$n->init([
+			'db' => 'cogTest',
+			'collection' => 'blocks']
+		);
 		return $n;
 	}
 
