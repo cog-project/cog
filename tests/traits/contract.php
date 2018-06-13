@@ -22,7 +22,10 @@ trait contractTests {
 		return $c;
 	}
 	
-	public function testBuildContract($party, $terms = [], $nonce = null) {
+	public function testBuildContract($party = null, $terms = [], $nonce = null) {
+		if(empty($party)) {
+			$party = $this->testParty();
+		}
 		$this->testContract();
 		$contract = $party->buildContract($terms,$nonce);
 		return $contract;
