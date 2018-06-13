@@ -1,6 +1,5 @@
 <?php
 class block {
-	private $id;
 	private $hash;
 	private $prevHash;
 	private $timestamp;
@@ -21,7 +20,6 @@ class block {
 
 	public function getData() {
 		return array (
-			'id' => $this->getId(),
 			'hash' => $this->getHash(),
 			'prevHash' => $this->getPrevHash(),
 			'timestamp' => $this->getTimestamp()
@@ -31,9 +29,12 @@ class block {
 	public function __toString() {
 		return json_encode($this->getData(), JSON_PRETTY_PRINT);
 	}
+	public function __toArray() {
+		return $this->getData();
+	}
 
 	public function generateHash() {
-		$this->hash = hash("sha256","{$this->id},{$this->prevHash},{$this->timestamp},".json_encode($this->getData(),JSON_PRETTY_PRINT));
+		$this->hash = hash("sha256","{$this->prevHash},{$this->timestamp},".json_encode($this->getData(),JSON_PRETTY_PRINT));
 	}
 
 	public function getPrevHash() {
@@ -52,9 +53,10 @@ class block {
 		$this->timestamp = $x;
 	}
 
-	public function finalize($id,$prev) {
-		$this->setId($id);
-		$this->setPrevHash($prev);
+	public function finalize($prev = null) {
+		if(!empty($prev)) {
+			$this->setPrevHash($prev);
+		}
 		$this->generateHash();
 	}
 }
@@ -215,19 +217,59 @@ class network {
 	private $lastHash = null;
 	private $dbClient;
 
+	private $db = null;
+	private $collection = null;
+
+	public static function getZeroHash() {
+		$hash = hash("sha256",0);
+		for($i = 0; $i < strlen($hash); $i++) {
+			$hash[$i] = '0';
+		}
+		return $hash;
+	}
+
+	public function getDb() {
+		return $this->db;
+	}
+
+	public function getCollection() {
+		return $this->collection;
+	}
+	
+	public function init($opts) {
+		$db = $opts['db'];
+		$collection = $opts['collection'];
+		$this->db = $db;
+		$this->collection = $collection;
+		
+		# TODO: exception handling
+		
+		if($this->dbClient->getCount($this->db,$this->collection) == 0) {
+			$this->lastHash = self::getZeroHash();
+		} else {
+			$this->lastHash = $this->getLastHash();
+		}
+	}
 	public function __construct() {
 		// We should be able to configure this later.
-		$this->dbClient = new MongoDB\Driver\Manager("mongodb://localhost:27017");
+		$this->dbClient = new dbClient();
 	}
 
 	public function register($party) {
 		$this->publicKeys[$party->getAddress()] = $party->getPublicKey();
 	}
 
-	public function put($contract) {
+	public function put($contract,$lastHash = null) {
 		# nonce - should be at least three, and over threshold of signers
 
-		$contract->finalize($this->size,$this->lastHash);
+		$contract->finalize($lastHash);
+		$res = $this->dbClient->dbInsert("{$this->db}.{$this->collection}",$contract->__toArray());
+		if($res->getInsertedCount()) {
+			$this->lastHash = $contract->getHash();
+			$this->size = $this->length();
+			return $contract->getHash();
+		}
+/*
 		$this->contracts[$contract->getHash()] = array(
 			# Contract Data
 			'data'=>$contract->__toString(),
@@ -242,17 +284,23 @@ class network {
 			# Miscellaneous Contract Comments
 			'cmts'=>array(),
 		);
-		$this->lastHash = $contract->getHash();
-		$this->size++;
-		return $contract->getHash();
+*/
 	}
 
 	public function getLastHash() {
+		if(!strlen($this->lastHash)) {
+			$table = "{$this->db}.{$this->collection}";
+			$res = $this->dbClient->dbQuery($table,[
+				'limit' => 1,
+				'sort' => ['_id' => -1],
+			])->toArray();
+			$this->lastHash = 'foo';
+		}
 		return $this->lastHash;
 	}
 
 	public function length() {
-		return count($this->contracts);
+		return $this->dbClient->getCount("{$this->db}","{$this->collection}");
 	}
 	
 	public function hasNonce($nonce) {
@@ -314,7 +362,8 @@ class network {
 		$this->edit($hash,$data);
 	}
 
-	public function mine() {
+	public function getDbClient() {
+		return $this->dbClient;
 	}
 }
 
@@ -326,11 +375,16 @@ class dbClient {
 	}
 
 	public function queryByKey($table,$key = []) {
-		return $this->dbQuery($table,$key)->toArray();
+		$res = $this->dbQuery($table,$key);
+		return $res->toArray();
 	}
 
 	public function command($cmd) {
 		return $this->dbCommand("admin",$cmd);
+	}
+
+	public function dbCollection($db,$cmd) {
+		return $this->client->executeCommand($db,new \MongoDB\Driver\Collection($cmd));
 	}
 
 	public function dbCommand($db,$cmd) {
@@ -352,14 +406,14 @@ class dbClient {
 		$this->client->executeBulkWrite($table,$bulk);
 	}
 	public function dbInsert($db,$key) {
-		$this->dbInsertMultiple($db,[$key]);
+		return $this->dbInsertMultiple($db,[$key]);
 	}
 	public function dbInsertMultiple($db,$key = []) {
 		$bulk = new MongoDB\Driver\BulkWrite;
 		foreach($key as $v) {
 			$bulk->insert($v);
 		}
-		$this->client->executeBulkWrite($db,$bulk);
+		return $this->client->executeBulkWrite($db,$bulk);
 	}
 	
 	public function showDatabases() {
@@ -373,8 +427,13 @@ class dbClient {
 	}
 
 	public function getCount($db,$table,$query = []) {
-		$res = $this->dbCommand($db,['count'=>$table,'query'=>$query])->toArray();
-		$row = reset($res);
+		$cmd = ['count'=>$table];
+		if(!empty($query)) {
+			$cmd += $query;
+		}
+		$res = $this->dbCommand($db,$cmd);
+		$array = $res->toArray();
+		$row = reset($array);
 		if($row->ok) {
 			return $row->n;
 		} else {
@@ -383,13 +442,10 @@ class dbClient {
 		}
 	}
 	public function collectionDrop($db,$collection) {
-		$res = $this->dbCommand($db,["drop" => $collection]);
+		$res = $this->dbCommand("$db",["drop" => $collection]);
 	}
 	public function collectionCreate($db,$collection) {
-		$res = $this->dbCommand($db,["create" => $collection]);
-	}
-	public function dbDrop($db) {
-		$res = $this->dbCommand($db,["drop" => 1]);
+		$res = $this->dbCommand("$db",["create" => $collection]);
 	}
 }
 ?>
