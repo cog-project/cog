@@ -45,11 +45,18 @@ class CogTest extends CogTestBase {
 
 	function setUp() {
 		emit("Running CogTest::{$this->getName()}");
-		# initialize_collection / delete_collection in setUp/tearDown?
+		// Initialize Collection
+		$this->initialize_collection();
+	}
+
+	function tearDown() {
+		// Delete Collection
+		$this->delete_collection();
 	}
 
 	function initialize_collection() {
 		emit("Initializing db collection",true);
+
 		try {
 			$this->testMongoCreateCollection("cogTest","blocks");
 		} catch (Exception $e) {
@@ -67,13 +74,10 @@ class CogTest extends CogTestBase {
 		}
 		$this->assertTrue(empty($e));
 	}
-	
+
 	function testSmoke($terms = array()) {
 		// Initliaze Database
 		$db = $this->testMongoCreateClient();
-
-		// Initialize Collection
-		$this->initialize_collection();
 		
 		/* TESTS/RULES/CAVEATS:
 		- network's first prevHash should be zeroHash.
@@ -88,7 +92,6 @@ class CogTest extends CogTestBase {
 
 		$network = $this->testNetwork();
 		$zeroHash = $this->testMineZeroNonce();
-		print_r($network);
 		$this->assertTrue($network->getLastHash() == $zeroHash);
 		$this->assertTrue($network->length() == 0);
 		
@@ -107,13 +110,13 @@ class CogTest extends CogTestBase {
 		
 		$genesis = $this->testContract($genesisTerms,$nonce);
 		$genesis->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
+		$genesis->setPrevHash($zeroHash);
 
 		emit($genesis,true);
 
-		emit($genesis->__toString());
+		emit($genesis->__toString(),true);
 
-		// Delete Collection
-		$this->delete_collection();
+		$this->testNetworkAdd($network,$genesis);
 
 		return; #architectural overhaul
 
