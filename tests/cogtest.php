@@ -45,10 +45,11 @@ class CogTest extends CogTestBase {
 
 	function setUp() {
 		emit("Running CogTest::{$this->getName()}");
+		# initialize_collection / delete_collection in setUp/tearDown?
 	}
 
 	function initialize_collection() {
-		emit("Initializing db collection");
+		emit("Initializing db collection",true);
 		try {
 			$this->testMongoCreateCollection("cogTest","blocks");
 		} catch (Exception $e) {
@@ -58,7 +59,7 @@ class CogTest extends CogTestBase {
 	}
 
 	function delete_collection() {
-		emit("Deleting db collection");
+		emit("Deleting db collection",true);
 		try {
 			$this->testMongoDropCollection("cogTest","blocks");
 		} catch (Exception $e) {
@@ -69,13 +70,11 @@ class CogTest extends CogTestBase {
 	
 	function testSmoke($terms = array()) {
 		// Initliaze Database
-		$db = $this->testMongoCreate();
+		$db = $this->testMongoCreateClient();
 
 		// Initialize Collection
 		$this->initialize_collection();
 		
-		# 0000000000000000000000000000000000000000000000000000000000000000
-
 		/* TESTS/RULES/CAVEATS:
 		- network's first prevHash should be zeroHash.
 		-- this should be assigned during object creation, retrieved from the database iff the working collection is empty.
@@ -89,7 +88,9 @@ class CogTest extends CogTestBase {
 
 		$network = $this->testNetwork();
 		$zeroHash = $this->testMineZeroNonce();
+		print_r($network);
 		$this->assertTrue($network->getLastHash() == $zeroHash);
+		$this->assertTrue($network->length() == 0);
 		
 		$nonce = $this->testMineNonce(0);
 		# how does verification of this work in bitcoin?
@@ -105,8 +106,11 @@ class CogTest extends CogTestBase {
 		];
 		
 		$genesis = $this->testContract($genesisTerms,$nonce);
+		$genesis->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
 
-		emit($genesis);
+		emit($genesis,true);
+
+		emit($genesis->__toString());
 
 		// Delete Collection
 		$this->delete_collection();
