@@ -21,7 +21,7 @@ trait mongoTests {
 		$this->assertTrue(count($list) > 0);
 		return $list;
 	}
-	public function testMongoCreateCollection($dbName = "cogTest", $collection = "testCollection",$attempt2 = false) {
+	public function testMongoCreateCollection($dbName = "cogTest", $collection = "blocks",$attempt2 = false) {
 		$db = $this->testMongoCreateClient();
 		try {
 			$db->collectionCreate($dbName,$collection);
@@ -33,13 +33,21 @@ trait mongoTests {
 		$collections = $db->showCollections($dbName);
 		$this->assertTrue(in_array($collection,$collections));
 	}
-	public function testMongoDropCollection($dbName = "cogTest",$collection = "testCollection") {
+	public function testMongoDropCollection($dbName = "cogTest",$collection = "blocks") {
+		$list = array_map(function($x){
+			return $x->name;
+		}, $this->testMongoDbList());
+		if(!in_array($dbName,$list)) {
+			$this->testMongoCreateCollection($dbName,$collection);
+		}
 		$db = $this->testMongoCreateClient();
-		$db->collectionDrop($dbName,$collection);
-		$collections = $db->showCollections($dbName);
+		$db->collectionDrop("$dbName","$collection");
+		$network = $this->testNetwork();
+		$this->assertTrue($network->length() == 0);
+		$collections = $db->showCollections("$dbName");
 		$this->assertFalse(in_array($collection,$collections));
 	}
-	public function testMongoCreateDropCollection($dbName = "cogTest",$collection = "testCollection",$attempt2 = false) {
+	public function testMongoCreateDropCollection($dbName = "cogTest",$collection = "blocks",$attempt2 = false) {
 		$this->testMongoCreateCollection($dbName,$collection);
 		$this->testMongoDropCollection($dbName,$collection);
 	}
