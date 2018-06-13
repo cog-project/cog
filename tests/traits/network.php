@@ -20,7 +20,13 @@ trait networkTests {
 
 		$len = $network->length();
 		$hash = $network->put($block);
-		# todo verify hash
+		$this->assertTrue(!empty($hash));
+		
+		$db = $network->getDbClient();
+		$this->assertTrue(is_object($db));
+		$verify = $db->queryByKey("{$network->getDb()}.{$network->getCollection()}",['hash'=>$hash]);
+		emit($verify);
+
 		$this->assertTrue($network->length() == $len + 1);
 		return $hash;
 	}
