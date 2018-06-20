@@ -6,6 +6,10 @@ class contract extends block {
 	private $parties = [];
 	private $signatures = [];
 
+	private $arbitrators = [];
+	private $guarantors = [];
+	private $summary;
+
 	private $terms;
 	private $nonce;
 	private $deadline;
@@ -34,6 +38,10 @@ class contract extends block {
 	public function getData($hash = false) {
 		return array(
 			'parties' => $this->parties,
+			'arbitrators' => $this->arbitrators,
+			'guarantors' => $this->guarantors,
+			'summary' => $this->summary,
+
 			'terms' => $this->terms,
 			'nonce' => $this->nonce,
 			'deadline' => $this->deadline,
