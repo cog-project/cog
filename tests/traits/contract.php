@@ -36,12 +36,48 @@ trait contractTests {
 	}
 
 	public function testCoin() {
+	/*
 		$this->testSmoke(array(
 			'party' => 'muh-address',
 			'coins' => 10,
 			'task' => 'ditch digging',
 			'due' => '2038-01-01',
 		));
+	*/
+	}
+	public function testGenesisBlock($master = null) {
+		if(empty($master)) {
+			$master = $this->testParty();
+		}
+
+		$network = $this->testNetwork(true);
+
+		$zeroHash = $this->testMineZeroNonce();
+
+		$genesisTerms = [
+			'action' => 'invite',
+			'params' => [
+				'address' => $master->getAddress(),
+				'public_key' => $master->getPublicKey(),
+			],
+		];
+		$nonce = $this->testMineNonce(0);
+		$genesis = $this->testContract($genesisTerms,$nonce);
+		$genesis->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
+		$genesis->setPrevHash($zeroHash);
+		$sig = $master->sign($genesis);
+		$genesis->addSignature($sig);
+
+		emit($genesis,true);
+		emit($genesis->toString(),true);
+
+		$hash = $this->testNetworkAdd($network,$genesis);
+
+		$network2 = $this->testNetwork();
+		$this->assertTrue($network2->getLastHash() != $zeroHash);
+		$this->assertTrue($network2->getLastHash() == $hash);
+
+		return $hash;
 	}
 }
 ?>
