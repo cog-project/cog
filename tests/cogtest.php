@@ -84,43 +84,23 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$db = $this->testMongoCreateClient();
 		
 		/* TESTS/RULES/CAVEATS:
-		- network's first prevHash should be zeroHash.
-		-- this should be assigned during object creation, retrieved from the database iff the working collection is empty.
-		-- thereafter, during initialization, network's first prevHash should :not: be zeroHash, nor should it be ever again.
+		+ network's first prevHash should be zeroHash.
+		++ this should be assigned during object creation, retrieved from the database iff the working collection is empty.
+		++ thereafter, during initialization, network's first prevHash should :not: be zeroHash, nor should it be ever again.
 		- network "invite" command must involve one party: the inviting party.
 		-- the address, however, must be included in the terms.
 		-- we may also want to include the public key.
 		- To prevent nonce reuse, we should precede the string used to generate the hash with 'cog' or something like that;
 		- With the exception of the genesis block, party::buildContract() should be utilized.
 		*/
-
-		$network = $this->testNetwork();
-		$zeroHash = $this->testMineZeroNonce();
-		$this->assertTrue($network->getLastHash() == $zeroHash);
-		$this->assertTrue($network->length() == 0);
-		
-		$nonce = $this->testMineNonce(0);
+				
 		# how does verification of this work in bitcoin?
 
 		$master = $this->testParty();
 
-		$genesisTerms = [
-			'action' => 'invite',
-			'params' => [
-				'address' => $master->getAddress(),
-				'public_key' => $master->getPublicKey(),
-			],
-		];
-		
-		$genesis = $this->testContract($genesisTerms,$nonce);
-		$genesis->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
-		$genesis->setPrevHash($zeroHash);
+		$genesisHash = $this->testGenesisBlock($master);
 
-		emit($genesis,true);
-
-		emit($genesis->__toString(),true);
-
-		$this->testNetworkAdd($network,$genesis);
+		$this->testNetworkAdd(null,null,$master,$genesisHash);
 
 		return; #architectural overhaul
 
