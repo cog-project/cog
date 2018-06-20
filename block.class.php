@@ -1,8 +1,8 @@
 <?php
 class block {
-	private $hash;
-	private $prevHash;
-	private $timestamp;
+	protected $hash;
+	protected $prevHash;
+	protected $timestamp;
 	
 	# data?
 
@@ -18,19 +18,25 @@ class block {
 		return $this->hash;
 	}
 
-	public function getData() {
-		return array (
-			'hash' => $this->getHash(),
+	public function getData($hash = false) {
+		$out = array (
 			'prevHash' => $this->getPrevHash(),
 			'timestamp' => $this->getTimestamp()
 		);
+		if($hash) {
+			$out += array (
+				'creatorSignature' => $this->getCreatorSignature(),
+				'hash' => $this->getHash(),
+			);
+		}
+		return $out;
 	}
 
-	public function __toString() {
-		return json_encode($this->getData(), JSON_PRETTY_PRINT);
+	public function toString($pretty = true) {
+		return json_encode($this->getData(), $pretty ? JSON_PRETTY_PRINT : null);
 	}
-	public function __toArray() {
-		return $this->getData();
+	public function __toArray($hash = false) {
+		return $this->getData($hash);
 	}
 
 	public function generateHash() {
@@ -57,6 +63,7 @@ class block {
 		if(!empty($prev)) {
 			$this->setPrevHash($prev);
 		}
+		$this->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
 		$this->generateHash();
 	}
 }
