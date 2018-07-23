@@ -9,6 +9,16 @@ trait miningTests {
 		$counter++;
 	}
 
+	public function generateNewNonce($version = 0,&$prevHash = null,&$counter = 1,$pregix = 'cog') {
+		$header = [
+			$version,
+			$prevHash,
+			gmdate('Y-m-d H:i:s\Z'),
+			cog::generate_nonce($counter),
+			$prefix,
+		];
+	}
+
 	function testVerifyNonce($difficulty = 1, $hash = null, $bool = true, $strict = false) {
 		if(empty($hash)) {
 			$this->testGenerateNonce($difficulty,$hash);

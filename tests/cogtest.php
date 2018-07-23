@@ -8,20 +8,9 @@ require 'traits/network.php';
 require 'traits/party.php';
 require 'traits/contract.php';
 require 'traits/mongo.php';
+require 'functions.php';
 
 require 'phpunit/vendor/autoload.php';
-
-function emit($message,$verbose = false) {
-	if($verbose && (!defined('VERBOSE') || !VERBOSE)) return;
-
-	$str = "[".date("Y-m-d H:i:s")."]\t";
-	if(is_array($message) || is_object($message)) {
-		$str .= print_r($message,1);
-	} else {
-		$str .= $message;
-	}
-	echo "$str\n";
-}
 
 // TODO: Convert "fallback" FZPL phpunit test case class into library for reuse elsewhere
 
@@ -88,9 +77,10 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		++ this should be assigned during object creation, retrieved from the database iff the working collection is empty.
 		++ thereafter, during initialization, network's first prevHash should :not: be zeroHash, nor should it be ever again.
 		- network "invite" command must involve one party: the inviting party.
-		-- the address, however, must be included in the terms.
-		-- we may also want to include the public key.
-		- To prevent nonce reuse, we should precede the string used to generate the hash with 'cog' or something like that;
+		++ the address, however, must be included in the terms.
+		++ we may also want to include the public key.
+		- To prevent nonce reuse/theft, we should precede the string used to generate the hash with 'cog' or something like that;
+		-- We also need to validate this.
 		- With the exception of the genesis block, party::buildContract() should be utilized.
 		*/
 				
