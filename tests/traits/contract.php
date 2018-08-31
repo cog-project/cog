@@ -57,11 +57,13 @@ trait contractTests {
 		$genesisTerms = [
 			'action' => 'invite',
 			'params' => [
+				'headers' => $this->testMineNonce(0,$master,$zeroHash),
 				'address' => $master->getAddress(),
 				'public_key' => $master->getPublicKey(),
 			],
 		];
-		$nonce = $this->testMineNonce(0);
+		
+		$nonce = $this->testMineNonce(0,$master,$zeroHash);
 		$genesis = $this->testContract($genesisTerms,$nonce);
 		$genesis->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
 		$genesis->setPrevHash($zeroHash);
