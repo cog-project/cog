@@ -40,7 +40,9 @@ class block {
 	}
 
 	public function generateHash() {
-		$this->hash = hash("sha256","{$this->prevHash},{$this->timestamp},".json_encode($this->getData(),JSON_PRETTY_PRINT));
+		$this->hash = cog::hash(
+			"{$this->prevHash},{$this->timestamp},".json_encode($this->getData(),JSON_PRETTY_PRINT)
+		);
 	}
 
 	public function getPrevHash() {
