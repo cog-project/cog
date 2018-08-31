@@ -166,7 +166,7 @@ class party {
 		$this->pub = $pub["key"];
 
 		// Use public key to generate uniqid/address
-		$this->addr = hash("sha256",$this->pub);
+		$this->addr = cog::hash($this->pub);
 	}
 
 	public function encrypt($data)
@@ -216,11 +216,7 @@ class network {
 	private $collection = null;
 
 	public static function getZeroHash() {
-		$hash = hash("sha256",0);
-		for($i = 0; $i < strlen($hash); $i++) {
-			$hash[$i] = '0';
-		}
-		return $hash;
+		return cog::generate_zero_hash();
 	}
 
 	public function getDb() {
@@ -331,7 +327,34 @@ return true;
 				if(!isset($params['public_key']) || empty($params['public_key'])) {
 					throw new Exception("No public key has been specified.");
 				}
-				# todo - validate address and public key
+				if(!isset($params['headers']) || empty($params['headers'])) {
+					throw new Exception("No public key has been specified.");
+				}
+				$headers = json_decode($params['headers'],true);
+				if(!is_array($headers)) {
+					throw new Exception("Failed to decode headers.");
+				}
+				if($headers['version'] != cog::$version) {
+					throw new Exception("Running version '{$headers[0]}'; contract version is '".cog::$version."'");
+				}
+				if(!$this->hasHash($headers['prevHash'])) {
+					throw new Exception("Previous hash '{$headers[1]}' not found.");
+				}
+				# [2] - verify gmdate
+				if(empty($headers['timestamp'])) {
+					throw new Exception("No timestamp has been specified.");
+				}
+				# [3] - not sure this needs to be verified (counter, previously nonce, optional maybe)
+				if(!isset($headers['counter']) || is_null($headers['counter'])) {
+					throw new Exception("No counter has been provided.");
+				}
+				# [4] - verify address
+				if(empty($headers['address'])) {
+					throw new Exception("No address has been provided.");
+				}
+				if(!$this->hasAddress($headers['address'])) {
+					throw new Exception("Address '{$headers['address']}' was not found.");
+				}
 				break;
 			case 'comment':
 				if(empty($terms['params']) || empty($terms['params']['body'])) {
@@ -342,6 +365,9 @@ return true;
 				throw new Exception("Action '{$terms['action']}' not found.");
 				break;
 		}
+	}
+	public static function isZeroHash($hash) {
+		return ($hash == cog::generate_zero_hash());
 	}
 	public function validateContract($contract) {
 		$this->validateContractParams($contract);
@@ -423,6 +449,9 @@ return true;
 	}
 
 	public function hasHash($hash) {
+		if(self::isZeroHash($hash)) {
+			return true;
+		}
 		$res = $this->dbClient->queryByKey("{$this->getDb()}.{$this->getCollection()}",['hash'=>$hash]);
 		if(count($res)) {
 			return true;
