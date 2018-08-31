@@ -1,22 +1,18 @@
 <?php
 trait miningTests {
-	function testGenerateNonce(&$counter = 1, &$hash = null, $prefix = 'cog') {
-		$workingCounter = "{$prefix}!!{$counter}";
-		cog::generate_nonce($workingCounter,$hash,$prefix);
-		$verifyHash = hash("sha256",$workingCounter);
+	function testGenerateNonce(&$counter = 1, &$hash = null, $prevHash = null, $address = null) {
+		if(!empty($prevHash) || !empty($address)) {
+			$this->assertTrue(!empty($prevHash), "No prevHash (or zero-hash) provided.");
+			$this->assertTrue(!empty($address), "No address provided.");
+		}
+		
+		$headers = cog::generate_header($prevHash,$counter,$address);
+		$hash = cog::generate_nonce($headers);
+		$verifyHash = cog::hash($headers);
 		$this->assertTrue($verifyHash == $hash,"Computed hash '$verifyHash', expected '$hash'");
 		emit("Nonce generated: $hash",true);
 		$counter++;
-	}
-
-	public function generateNewNonce($version = 0,&$prevHash = null,&$counter = 1,$pregix = 'cog') {
-		$header = [
-			$version,
-			$prevHash,
-			gmdate('Y-m-d H:i:s\Z'),
-			cog::generate_nonce($counter),
-			$prefix,
-		];
+		return $headers;
 	}
 
 	function testVerifyNonce($difficulty = 1, $hash = null, $bool = true, $strict = false) {
@@ -41,29 +37,31 @@ trait miningTests {
 		}
 	}
 	
-	function testMineNonce($difficulty = 1, $party = null) {
+	function testMineNonce($difficulty = 1, $party = null, $prevHash = null) {
 		$out = null;
 		$hash = null;
 		$prefix = null;
 		
 		if(is_object($party)) {
-			$prefix = $party->getAddress();
+			$address = $party->getAddress();
+		} else {
+			$address = null;
 		}
 		
 		while(1) {
-			$this->testGenerateNonce($this->counter,$hash,$prefix);
+			$headers = $this->testGenerateNonce($this->counter,$hash,$prevHash,$address);
 			$success = $this->testVerifyNonce($difficulty,$hash);
 			if($success) {
 				break;
 			}
 		}
 		$this->assertTrue(!empty($hash));
-		return $hash;
+		return $headers;
 	}
 	function testMineZeroNonce() {
-		$hash = $this->testMineNonce(0);
+		$hash = cog::generate_zero_hash();
 		for($i = 0; $i < strlen($hash); $i++) {
-			$hash[$i] = '0';
+			$this->assertTrue($hash[$i] == '0');
 		}
 		return $hash;
 	}
