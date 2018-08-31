@@ -19,6 +19,9 @@ trait networkTests {
 		if($network == null) {
 			$network = $this->testNetwork();
 		}
+		if($party == null) {
+			$party = $this->testParty();
+		}
 		if($block == null) {
 			$len = $network->length();
 			$block = $this->testContract();
@@ -28,7 +31,7 @@ trait networkTests {
 			]);
 			$block->setPrevHash($len ? $lastHash : $this->testMineZeroNonce());
 			$block->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
-			$block->setNonce($this->testMineNonce(0,$party));
+			$block->setNonce($this->testMineNonce(0,$party,$block->getPrevHash()));
 			if($len) {
 				$block->setCreator($party->getAddress());
 				$block->addParty($party->getAddress());
