@@ -16,12 +16,13 @@ trait networkTests {
 	}
 
 	public function testNetworkAdd($network = null,$block = null,$party = null, $lastHash = null) {
-		if($network == null) {
-			$network = $this->testNetwork();
-		}
-		if($party == null) {
-			$party = $this->testParty();
-		}
+		$init = $this->testInitialize([
+			'network:network' => $network,
+			'party:party' => $party,
+		]);
+		foreach($init as $i=>$v) $$i = $v;
+		
+		
 		if($block == null) {
 			$len = $network->length();
 			$block = $this->testContract();
