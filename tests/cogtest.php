@@ -27,16 +27,16 @@ if(!class_exists("PHPUnit\Framework\TestCase") && 0){
 
 class CogTest extends PHPUnit\Framework\TestCase {
 
-	use miningTests;
+	use mongoTests;
 	use networkTests;
 	use partyTests;
 	use contractTests;
-	use mongoTests;
+	use miningTests;
 	
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
 
-	function setUp() {
+	function setUp() {	
 		emit("Running CogTest::{$this->getName()}");
 		// Initialize Collection
 		$this->initialize_collection();
@@ -68,6 +68,23 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(empty($e));
 	}
 
+	function testInitialize($params = array()) {
+		$out = [];
+		foreach($params as $i => &$v) {
+			$name_type = explode(":",$i);
+			$name = $name_type[0];
+			$type = $name_type[1];
+			if(empty($v)) {
+				$f = "test".ucfirst($type);
+				$out[$name] = $this->$f();
+			} else {
+				$out[$name] = $v;
+			}
+			unset($params[$i]);
+		}
+		return $out;
+	}
+	
 	function testSmoke($terms = array()) {
 		// Initliaze Database
 		$db = $this->testMongoCreateClient();
@@ -86,11 +103,11 @@ class CogTest extends PHPUnit\Framework\TestCase {
 				
 		# how does verification of this work in bitcoin?
 
+		$network = $this->testNetwork();
 		$master = $this->testParty();
 
-		$genesisHash = $this->testGenesisBlock($master);
-
-		$this->testNetworkAdd(null,null,$master,$genesisHash);
+		$genesis = $this->testCreateGenesisBlock($master);
+		$this->testGenesisBlock($master,$genesis);
 
 		return; #architectural overhaul
 
