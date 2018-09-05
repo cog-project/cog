@@ -45,12 +45,12 @@ trait contractTests {
 		));
 	*/
 	}
-	public function testGenesisBlock($master = null) {
-		if(empty($master)) {
-			$master = $this->testParty();
-		}
-
-		$network = $this->testNetwork(true);
+	public function testCreateGenesisBlock($master = null) {
+		$init = $this->testInitialize([
+			'master:party'=> $master,
+			'network:network' => null,
+		]);
+		foreach($init as $i=>$v) $$i = $v;
 
 		$zeroHash = $this->testMineZeroNonce();
 
@@ -73,6 +73,17 @@ trait contractTests {
 		emit($genesis,true);
 		emit($genesis->toString(),true);
 
+		return $genesis;
+	}
+	public function testGenesisBlock($master = null, $genesis = null) {
+		$init = $this->testInitialize([
+			'party:party'=> $master,
+			'network:network' => null,
+			'zeroHash:mineZeroNonce' => null,
+			'genesis:createGenesisBlock' => $genesis,
+		]);
+		foreach($init as $i=>$v) $$i = $v;
+		
 		$hash = $this->testNetworkAdd($network,$genesis);
 
 		$network2 = $this->testNetwork();
