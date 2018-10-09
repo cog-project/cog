@@ -1,11 +1,12 @@
 <?php
 trait miningTests {
 	function testGenerateNonce(&$counter = 1, &$hash = null, $prevHash = null, $address = null) {
+	/*
 		if(!empty($prevHash) || !empty($address)) {
 			$this->assertTrue(!empty($prevHash), "No prevHash (or zero-hash) provided.");
 			$this->assertTrue(!empty($address), "No address provided.");
 		}
-		
+	*/	
 		$headers = cog::generate_header($prevHash,$counter,$address);
 		$hash = cog::generate_nonce($headers);
 		$verifyHash = cog::hash($headers);
