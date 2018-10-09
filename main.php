@@ -1,7 +1,12 @@
 <?php
-include dirname(__FILE__).'/block.class.php';
-include dirname(__FILE__).'/cog.class.php';
-include dirname(__FILE__).'/contract.class.php';
+require dirname(__FILE__).'/block.class.php';
+require dirname(__FILE__).'/cog.class.php';
+require dirname(__FILE__).'/contract.class.php';
+require dirname(__FILE__).'/dbClient.class.php';
+require dirname(__FILE__).'/node.class.php';
+require dirname(__FILE__).'/wallet.class.php';
+require dirname(__FILE__).'/request.class.php';
+require dirname(__FILE__).'/session.class.php';
 
 # for appending contracts
 class addendum extends contract {
@@ -36,46 +41,21 @@ class party {
 	public function __construct($populate = true) {
 		if(!$populate) return;
 
-		// Configuration settings for the key
-		$config = array(
-		    "digest_alg" => "sha512",
-		    "private_key_bits" => 4096,
-		    "private_key_type" => OPENSSL_KEYTYPE_RSA,
-		);
-
-		// Create the private and public key
-		$res = openssl_pkey_new($config);
-
-		// Extract the private key into $private_key
-		openssl_pkey_export($res, $this->priv);
-
-		// Extract the public key into $public_key
-		$pub = openssl_pkey_get_details($res);
-		$this->pub = $pub["key"];
+		$keypair = cog::generate_keypair();
+		foreach($keypair as $k => $v) {
+			$this->$k = $v;
+		}
 
 		// Use public key to generate uniqid/address
 		$this->addr = cog::hash($this->pub);
 	}
 
-	public function encrypt($data)
-	{
-		if (openssl_public_encrypt($data, $encrypted, $this->pub)) {
-			$data = base64_encode($encrypted);
-		} else {
-			throw new Exception('Unable to encrypt data. Perhaps it is bigger than the key size?');
-		}
-		return $data;
+	public function encrypt($data) {
+		return cog::encrypt($this->pub,$data);
 	}
 
-	public function decrypt($data)
-	{
-		if (openssl_private_decrypt(base64_decode($data), $decrypted, $this->priv)) {
-			$data = $decrypted;
-			return $data;
-		} else {
-			$data = '';
-			throw new Exception('Failed to decrypt data.');
-		}
+	public function decrypt($data) {
+		return cog::decrypt($this->priv,$data);
 	}
 
 	public function buildContract($terms = null,$nonce = null) {
@@ -85,10 +65,10 @@ class party {
 	}
 
 	public function sign($contract) {
-		$terms = $contract->toString(false);
-		openssl_sign($terms, $binary_signature, $this->getPrivateKey(), OPENSSL_ALGO_SHA1);
-		$sig = base64_encode($binary_signature);
-		return $sig;
+		return cog::sign(
+			$this->priv,
+			$contract->toString(false)
+		);
 	}
 }
 
@@ -183,15 +163,13 @@ class network {
 			$parties = [$parties];
 		}
 		$res = $this->dbClient->queryByKey("{$this->db}.{$this->collection}",['terms.action'=>'invite','terms.params.address'=>$parties]);
-		emit($res);
-return array();
+		return array();
 	}
 	public function hasAddress($parties = []) {
 		if(!is_array($parties)) {
 			$parties = [$parties];
 		}
 		$res = $this->dbClient->queryByKey("{$this->db}.{$this->collection}",['terms.action'=>'invite','terms.params.address'=>$parties]);
-return true;
 		return count($res) == count($parties) ? true : false;
 	}
 	public function validateContractAction($contract) {
@@ -438,88 +416,6 @@ return true;
 
 	public function getDbClient() {
 		return $this->dbClient;
-	}
-}
-
-class dbClient {
-	protected $client = null;
-
-	public function __construct() {
-		$this->client = new MongoDB\Driver\Manager("mongodb://localhost:27017");
-	}
-
-	public function queryByKey($table,$key = []) {
-		$res = $this->dbQuery($table,$key);
-		return $res->toArray();
-	}
-
-	public function command($cmd) {
-		return $this->dbCommand("admin",$cmd);
-	}
-
-	public function dbCollection($db,$cmd) {
-		return $this->client->executeCommand($db,new \MongoDB\Driver\Collection($cmd));
-	}
-
-	public function dbCommand($db,$cmd) {
-		return $this->client->executeCommand($db,new \MongoDB\Driver\Command($cmd));
-	}
-
-	public function dbQuery($db,$key) {
-		return $this->client->executeQuery($db,new \MongoDB\Driver\Query($key));
-	}
-
-	public function dbDelete($table,$key) {
-		$this->dbDeleteMultiple($table,[$key]);
-	}
-	public function dbDeleteMultiple($table,$key) {
-		$bulk = new MongoDB\Driver\BulkWrite;
-		foreach($key as $v) {
-			$bulk->delete($v);
-		}
-		$this->client->executeBulkWrite($table,$bulk);
-	}
-	public function dbInsert($db,$key) {
-		return $this->dbInsertMultiple($db,[$key]);
-	}
-	public function dbInsertMultiple($db,$key = []) {
-		$bulk = new MongoDB\Driver\BulkWrite;
-		foreach($key as $v) {
-			$bulk->insert($v);
-		}
-		return $this->client->executeBulkWrite($db,$bulk);
-	}
-	
-	public function showDatabases() {
-		$res = $this->dbCommand("admin",["listDatabases"=>1])->toArray();
-		return array_shift($res)->databases;
-	}
-	public function showCollections($db) {
-		$res = $this->dbCommand($db,["listCollections"=>1])->toArray();
-		$out = array_map(function($x) { return $x->name; },$res);
-		return $out;
-	}
-
-	public function getCount($db,$table,$query = []) {
-		$cmd = ['count'=>$table];
-		if(!empty($query)) {
-			$cmd += $query;
-		}
-		$res = $this->dbCommand($db,$cmd);
-		$array = $res->toArray();
-		$row = reset($array);
-		if($row->ok) {
-			return $row->n;
-		} else {
-			print_r($row);
-			return null;
-		}
-	}
-	public function collectionDrop($db,$collection) {
-		$res = $this->dbCommand("$db",["drop" => $collection]);
-	}
-	public function collectionCreate($db,$collection) {
-		$res = $this->dbCommand("$db",["create" => $collection]);
 	}
 }
 ?>
