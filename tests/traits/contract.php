@@ -45,6 +45,36 @@ trait contractTests {
 		));
 	*/
 	}
+
+	public function verifyRequest($request,$action) {
+		$this->assertTrue($request->getAction() == $action);
+		$array = $request->toArray();
+		$this->assertTrue($array['action'] == $action);
+		$this->assertTrue(strlen($array['id']) == 64);
+		$json = $request->toString();
+		$ob = json_decode($json);
+		$this->assertTrue($ob->action == $action);
+		$this->assertTrue(strlen($ob->id) == 64);		
+	}
+
+	public function verifyInvite($invite) {
+		$this->verifyRequest($invite,"invite");
+	}
+
+	public function testRequest($action = 'invite',$params = null) {
+		$this->assertTrue(class_exists('request'));
+		$request = new request($action);
+		$this->verifyRequest($request,$action);
+		return $request;
+	}
+
+	public function testInviteRequest() {
+		$this->testRequest();
+		$this->assertTrue(class_exists('inviteRequest'));
+		$invite = new inviteRequest();
+		$this->verifyInvite($invite);
+	}
+	
 	public function testCreateGenesisBlock($master = null) {
 		$init = $this->testInitialize([
 			'master:party'=> $master,
