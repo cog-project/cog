@@ -84,11 +84,91 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		}
 		return $out;
 	}
+
+	function nodeRequest($params = []) {
+		$url = 'http://localhost/cog/server.php';
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL,$url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+		$res = curl_exec($ch);
+		curl_close($ch);
+		$this->assertTrue(strlen($res) > 0);
+		$assoc = json_decode($res,true);
+		$this->assertTrue(is_array($assoc), $res);
+		$this->assertTrue(isset($assoc['result']));
+		$this->assertTrue(isset($assoc['message']));
+		return $assoc;
+	}
 	
-	function testSmoke($terms = array()) {
-		// Initliaze Database
-		$db = $this->testMongoCreateClient();
-		
+	function testServEmpty() {
+		$res = $this->nodeRequest();
+		$this->assertTrue(!$res['result']);
+		$this->assertTrue(!empty($res['message']));
+		return $res;
+	}
+
+	function testValidateRequest($params = [], $bool = true, $verbose = true /* should be false by default */) {
+		$this->testServEmpty();
+		if(!empty($params)) {
+			$params = array_merge($params,['environment' => 'cogTest']);
+			$res = $this->nodeRequest($params);
+			if($verbose) {
+				emit($res);
+			}
+			$this->assertTrue(!empty($res['result']) == $bool);
+			return $res;
+		}
+	}
+
+	function testValidateAddrRequest() {
+		# validate_address - no action
+		$this->testValidateRequest([
+			'blah',
+		],false);
+
+		# validate_address - no params
+		$this->testValidateRequest([
+			'action' => 'validate_address'
+		],false);
+
+		# validate_address - invalid action
+		$this->testValidateRequest([
+			'action' => 'blah',
+			'params' => '909090909',
+		],false);
+
+		# validate_address - valid action, invalid address
+		$this->testValidateRequest([
+			'action' => 'validate_address',
+			'params' => ['address' => '909090909'],
+		],false);
+
+		# register - valid action, invalid address
+		$this->testValidateRequest([
+			'action' => 'register',
+			'params' => ['address' => '909090909'],
+		],false);
+
+		# register - valid action, valid address
+		$party = $this->testParty();
+		$res = $this->testValidateRequest([
+			'action' => 'register',
+			'params' => ['address' => $party->getAddress()],
+		],true);
+		$this->assertTrue(isset($res['data']));
+		$this->assertTrue($res['data'] === true);
+
+		# validate_address - valid action, valid address
+		$res = $this->testValidateRequest([
+			'action' => 'validate_address',
+			'params' => ['address' => $party->getAddress()],
+		],true);
+		$this->assertTrue(isset($res['data']));
+		$this->assertTrue(strlen($res['data']) > 0);
+	}
+	
+	function testSmoke($terms = array()) {		
 		/* TESTS/RULES/CAVEATS:
 		+ network's first prevHash should be zeroHash.
 		++ this should be assigned during object creation, retrieved from the database iff the working collection is empty.
@@ -99,10 +179,27 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		- To prevent nonce reuse/theft, we should precede the string used to generate the hash with 'cog' or something like that;
 		-- We also need to validate this.
 		- With the exception of the genesis block, party::buildContract() should be utilized.
+
+		- invite verification
+		-- may want to include public key
+		-- absolutely need to invite address
+		-- may wnat to verify count increment
+		-- and of course verify previous block is appropriate
+		--- also do this after adding blocks/contracts/whatever to the network
+		--- and signatures - absolutely positively must be verified
+		- comments
+		- messages
+		- dispute messages and the resolution process
+		- the whole granular architecture thing - should be able to dynamically update contracts, with approval of appropriate parties
 		*/
 				
 		# how does verification of this work in bitcoin?
 
+		$wallet = new wallet();
+
+		// Initliaze Database
+		$db = $this->testMongoCreateClient();
+		
 		$network = $this->testNetwork();
 		$master = $this->testParty();
 
@@ -110,57 +207,5 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->testGenesisBlock($master,$genesis);
 
 		return; #architectural overhaul
-
-		$a = $this->testParty();
-		$b = $this->testParty();
-
-		# should registrations also occur on the blockchain?  perhaps to account for constraints on / policy affecting new users?
-
-		$cnt = $n->length();
-		$n->register($a);
-		$this->assertTrue($n->length() == $cnt+1);
-
-		$cnt = $n->length();
-		$n->register($b);
-		$this->assertTrue($n->length() == $cnt+1);
-
-		$nonce = $this->testMineContract();
-
-		$c = $a->buildContract($terms ? : array(
-			'You will keep your word.',
-			'You will not initiate aggression.',
-			'You will respect private property.'
-		),$nonce['nonce']);
-		$c->addParty($b);
-
-		$cnt = $n->length();
-		$caddr = $this->testNetworkAdd($n,$c);
-		$this->assertTrue($n->length() == $cnt+1);
-
-		$sig1 = $a->sign($n->get($caddr));
-		$sig2 = $b->sign($n->get($caddr));
-
-		$this->sign_contract_verify_increment($n,$sig1,$a,$caddr);
-		$this->sign_contract_verify_increment($n,$sig2,$b,$caddr);
-		$this->sign_contract_verify_increment($n,$sig1,$a,$caddr,'done');
-		$this->sign_contract_verify_increment($n,$sig2,$b,$caddr);
-
-		$cmt = $n->genComment($caddr,$a->getAddress(),'comment','how do i mark a user as fraudulent');
-		# we should probably turn this into a static factory - so without further ado, TDD:
-		$this->assertTrue(is_object(json_decode($cmt)));
-		# needs to be a block containing the comment.
-
-		$sig3 = $a->sign($cmt,false);
-		$cnt = $n->length();
-		$n->comment($caddr,$cmt,$sig3);
-
-		# should pass after moving to more granular architecture
-		$this->assertTrue($n->length() == $cnt + 1);
-
-		# btw we could benefit from more signatures and more atomized transactions
-		## alas, the imperative for scarcity
-
-		$this->emit($c);
-		$this->emit($n);
 	}
 }
