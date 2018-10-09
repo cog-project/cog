@@ -1,15 +1,49 @@
+html {
+    font-family:'Avant Garde', sans-serif;
+}
+
 body {
   width:640px;
   margin:0 auto;
+#  border:1px solid #ccc;
 }
-h1 { font-size:26px; }
-h2 { font-size:18px; }
+h1 {
+    font-size:26px;
+    margin: 0;
+    padding: 15px;
+    background-color:#eee;
+}
+h2 { font-size:18px; color:#444; }
+h3 { font-size:14px; color:#888; }
 
-.head {
-  border:1px solid #ccc;
+.head, .foot, .main, h1 {
+  border-top:1px solid #ccc;
+  border-left:1px solid #ccc;
+  border-right:1px solid #ccc;
 }
+
+.foot {
+    padding:5px;
+    background-color:#eee;
+    border-bottom:1px solid #ccc;
+}
+
+.main {
+    padding:15px 20px;
+    word-wrap:break-word;
+}
+
 @media only screen and (max-width: 768px) {
   body { width:100%; }
-  h1 { font-size:26px; }
-  h2 { font-size:18px; }
+  h1 { font-size:20px; text-align:center; }
+  h2 { font-size:16px; }
+  h3 { font-size:14px; }
+  .head { text-align:center; }
+  .foot {
+      text-align:center;
+      font-size:10px;
+  }
+  .main {
+      font-size:13px;
+  }
 }
