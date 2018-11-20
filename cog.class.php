@@ -1,8 +1,11 @@
 <?php
 class cog {
-	static $version = 0;
+	static $version = '0.0.0';
 
 	static function hash($x) {
+		if(is_array($x)) {
+			$x = json_encode($x,JSON_PRETTY_PRINT);
+		}
 		return hash("sha256",$x);
 	}
 	
@@ -19,15 +22,19 @@ class cog {
 		return $nonce;
 	}
 
-	static function generate_header($prevHash = null,$counter = 0,$address = null) {
+	static function generate_header($prevHash = null,$counter = 0,$address = null,$json = true) {
 		$header = [
 			'version' => self::$version,
 			'prevHash' => $prevHash,
 			'timestamp' => gmdate('Y-m-d H:i:s\Z'),
-			'counter' => $counter,
+			'counter' => (string)$counter,
 			'address' => $address,
 		];
-		return json_encode($header,JSON_PRETTY_PRINT);
+		if($json) {
+			return json_encode($header,JSON_PRETTY_PRINT);
+		} else {
+			return $header;
+		}
 	}
 
 	static function generate_keypair() {
@@ -78,6 +85,14 @@ class cog {
 		openssl_sign($data, $binary_signature, $priv, OPENSSL_ALGO_SHA1);
 		$sig = base64_encode($binary_signature);
 		return $sig;
+	}
+
+	static function verify_signature($data,$signature,$public_key) {
+		return openssl_verify($data,base64_decode($signature),$public_key);
+	}
+
+	static function get_timestamp() {
+		return gmdate('Y-m-d H:i:s\Z');
 	}
 }
 ?>
