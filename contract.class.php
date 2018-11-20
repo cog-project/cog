@@ -16,6 +16,14 @@ class contract extends block {
 
 	public function build($data) {
 		$data = (array)$data;
+		$headers = $data['headers'];
+		unset($data['headers']);
+		foreach($headers as $k => $v) {
+			if(property_exists($this,$k)) {
+				$this->$k = $v;
+			}
+		}
+		$this->terms = $data;
 		foreach($data as $k => $v) {
 			if(property_exists($this,$k)) {
 				$this->$k = $v;
