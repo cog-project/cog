@@ -45,7 +45,8 @@ class dbClient {
 		foreach($key as $v) {
 			$bulk->insert($v);
 		}
-		return $this->client->executeBulkWrite($db,$bulk);
+		$res = $this->client->executeBulkWrite($db,$bulk);
+		return $res;
 	}
 	
 	public function showDatabases() {
