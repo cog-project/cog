@@ -94,5 +94,9 @@ class cog {
 	static function get_timestamp() {
 		return gmdate('Y-m-d H:i:s\Z');
 	}
+
+	static function print($x) {
+		echo '<pre>'.print_r($x,1).'</pre>';
+	}
 }
 ?>
