@@ -10,5 +10,7 @@ if(class_exists('session')) {
 </head>
 <body>
 <div class='head'>
-  <img src='cog.png' style='height:75px'>
+  <a href='client.php'>
+    <img src='cog.png' style='height:75px'>
+  </a>
 </div>
