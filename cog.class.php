@@ -37,6 +37,14 @@ class cog {
 		}
 	}
 
+	static function generate_addr($pub) {
+		preg_match('~^-----BEGIN ([A-Z ]+)-----\s*?([A-Za-z0-9+=/\r\n]+)\s*?-----END \1-----\s*$~D', $pub, $matches);
+		$strip = trim($matches[2]);
+		$raw = base64_decode($strip);
+		$addr = cog::hash($raw);
+		return $addr;
+	}
+	
 	static function generate_keypair() {
 		$keypair = [
 			'pub' => null,
@@ -53,10 +61,10 @@ class cog {
 		// Create the private and public key
 		$res = openssl_pkey_new($config);
 
-		// Extract the private key into $private_key
+		// Extract the private key
 		openssl_pkey_export($res, $keypair['priv']);
 
-		// Extract the public key into $public_key
+		// Extract the public key
 		$pub = openssl_pkey_get_details($res);
 		$keypair['pub'] = $pub["key"];
 
