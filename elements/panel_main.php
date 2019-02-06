@@ -1,4 +1,12 @@
-<b>Invites:</b> 0
+<h2>Options</h2>
+    <h3>Invites</h3>
+    <?php
+    $invites = 0;
+    /* todo: list invited users, invite mining, identify spare invites, count for this section */
+    ?>
+    You currently have <b><?=$invites?></b> invites. <?=$invites ? "<b><a href=#>Invite New User</a></b>":"" ?>
+
+<h2>Contracts Summary</h2>
 <?php
 $cats = [
 	'messages' => 'Messages',
@@ -10,14 +18,45 @@ $cats = [
 	'completed' => 'Completed Contracts',
 ];
 
-foreach($cats as $k => $v) { ?>
+foreach($cats as $k => $v) {
+  if(empty($summary[$k])) {
+    continue;
+  } else {
+  }
+?>
 <h3><?=$v?></h3>
-<ul>
-  <li>Blah</li>
-  <li>Blah</li>
-  <li>Blah</li>
-  <li style='list-style-type:none;'><a href=#>View More</a> (0)</li>
-</ul>
+<table class='view'>
+  <tr>
+   <th>Hash</th>
+   <th>Address</th>
+   <th>Type</th>
+   <th>Date</th>
+  </tr>
+  <?php
+  $its = 0;
+#  echo '<pre>'.print_r($summary,1).'</pre>';
+  foreach($summary[$k] as $h => $t) {
+  ?>
+    <tr>
+     <td>
+      <a href='?view_contract=<?=$h?>'>
+       <b><?=$h?></b>
+      </a>
+     </td>
+     <td><?=$t['request']['headers']['address'] . ($t['request']['headers']['address'] == $client->getAddress() ? " <span class='gray'>(You)</span>" : "") ?></td>
+     <td>
+      <?=$t['request']['action']?>
+     </td>
+     <td><?=$t['request']['headers']['timestamp']?></td>
+    </tr>
+  <?php
+    $its++;
+    if($its == 3) break;
+  }
+  if(count($summary[$k]) > 3) { ?>
+    <li style='list-style-type:none;'><a href=#>View More</a> (<?=count($summary[$k])?>)</li>
+  <?php } ?>
+</table>
 <?php } ?>
 
 

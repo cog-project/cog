@@ -5,10 +5,12 @@ html {
 body {
   width:640px;
   margin:0 auto;
-#  border:1px solid #ccc;
+  background:#fff;
+  #  border:1px solid #ccc;
 }
 h1 {
-    font-size:26px;
+    font-size:22px;
+    font-weight:900;
     margin: 0;
     padding: 15px;
     background-color:#eee;
@@ -21,16 +23,115 @@ h3 { font-size:14px; color:#888; }
   border-left:1px solid #ccc;
   border-right:1px solid #ccc;
 }
-
+ul li a, table.view a {
+    text-decoration:none;
+    color:#008;
+}
+ul li a:visited, table.view a:visited {
+    color:#004;
+}
+ul li a:hover {
+    color:#00F;
+}
+.headlinks a {
+    display:inline-block;
+    font-weight:900;
+    font-size:14px;
+    padding:10px;
+    border:1px solid #eee;
+    text-decoration:none;
+    background:#fff;
+}
+.headlinks a:hover {
+    background:#eee;
+}
 .foot {
     padding:5px;
     background-color:#eee;
     border-bottom:1px solid #ccc;
+    font-size:10px;
+}
+
+table.view {
+    border: 1px solid #eee;
+}
+
+table.small th, table.small td, td.small, th.small {
+    font-size:10px !important;
+}
+
+table.view th {
+    text-align:center;
+    font-size:12px;
+    background:#eef;
+}
+table.view td {
+    font-size:12px;
+    padding: 5px;
+    word-break:break-all;
+    min-width:80px;
+}
+
+table.view tr:nth-child(even) td:nth-child(odd),
+table.view tr:nth-child(odd) td:nth-child(even)
+{
+  background-color: #f0f0f0;
 }
 
 .main {
     padding:15px 20px;
+    background-color:#fafafa;
+}
+
+.main details, .main div.details {
+    border:1px solid #eee;
+    padding: 10px;
+    border-radius: 15px;
+    background-color:#fff;
+}
+
+.main .txt {
+    display:block;
+    font-family:monospace;
+    white-space:pre-line;
+    background:#eef;
+    padding:8px;
+    border-radius:10px;
+    width:auto;
     word-wrap:break-word;
+    font-size:11px;
+}
+
+.table-div, .table-div b {
+    padding:5px;
+    word-wrap:break-word;
+}
+
+.table {
+    display:table;
+    width:100%;
+}
+
+.table-row {
+    display:table-row;
+}
+
+.table-div {
+    display:table-cell;
+    min-width:100px;
+    max-width:320px;
+}
+
+.table-div, .main {
+    font-size:12px;
+}
+
+.subform {
+    border: 1px solid #eee;
+}
+
+span.gray {
+    color:#aaa;
 }
 
 @media only screen and (max-width: 768px) {
@@ -41,9 +142,18 @@ h3 { font-size:14px; color:#888; }
   .head { text-align:center; }
   .foot {
       text-align:center;
+      font-size:12px;
+  }
+  .main, .table-div {
+      font-size:12px;
+  }
+  .main .txt {
       font-size:10px;
   }
-  .main {
-      font-size:13px;
+  table.view td {
+      font-size:12px;
+  }
+  .table-div {
+      max-width:200px;
   }
 }

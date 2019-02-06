@@ -139,6 +139,21 @@ class network {
 	# TODO test
 		return $this->dbClient->getCount("{$this->db}","{$this->collection}",['terms.action'=>'invite']);
 	}
+	public function addNode($data) {
+		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
+		if(count($res)) {
+			$data['_id'] = $res[0]->_id;
+			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data);
+		} else {
+			$res = $this->dbClient->dbInsert("{$this->db}.nodes",$data);
+		}
+		return $res;
+	}
+	public function listNodes() {
+		$out = [];
+		$res = $this->dbClient->queryByKey("{$this->db}.nodes",[]);
+		return $res;
+	}
 	public function hasAddress($parties = []) {
 		if(!is_array($parties)) {
 			$parties = [$parties];
