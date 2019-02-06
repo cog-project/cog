@@ -49,6 +49,21 @@ class dbClient {
 		return $res;
 	}
 	
+	public function dbUpdate($db,$key) {
+		return $this->dbUpdateMultiple($db,[$key]);
+	}
+	public function dbUpdateMultiple($db,$key = []) {
+		$bulk = new MongoDB\Driver\BulkWrite;
+		foreach($key as $v) {
+			$bulk->update(
+				['ip_address' => $v['ip_address'], 'ip_port' => $v['ip_port']], //filter
+				$v //replacement
+			);
+		}
+		$res = $this->client->executeBulkWrite($db,$bulk);
+		return $res;
+	}
+
 	public function showDatabases() {
 		$res = $this->dbCommand("admin",["listDatabases"=>1])->toArray();
 		return array_shift($res)->databases;
