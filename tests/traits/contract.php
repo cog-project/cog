@@ -85,9 +85,9 @@ trait contractTests {
 		$zeroHash = $this->testMineZeroNonce();
 
 		$genesisTerms = [
+			'headers' => $this->testMineNonce(0,$master,$zeroHash),
 			'action' => 'invite',
 			'params' => [
-				'headers' => $this->testMineNonce(0,$master,$zeroHash),
 				'address' => $master->getAddress(),
 				'public_key' => $master->getPublicKey(),
 			],
@@ -100,8 +100,8 @@ trait contractTests {
 		$sig = $master->sign($genesis);
 		$genesis->addSignature($sig);
 
-		emit($genesis,true);
-		emit($genesis->toString(),true);
+#		emit($genesis);
+#		emit($genesis->toString(),true);
 
 		return $genesis;
 	}

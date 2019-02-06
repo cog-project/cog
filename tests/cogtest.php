@@ -116,6 +116,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			if($verbose) {
 				emit($res);
 			}
+			$this->assertTrue(is_array($res),"Result is not an array. (".print_r($res,1).")");
 			$this->assertTrue(!empty($res['result']) == $bool);
 			return $res;
 		}
@@ -146,18 +147,33 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 		# register - valid action, invalid address
 		$this->testValidateRequest([
-			'action' => 'register',
+			'action' => 'invite',
 			'params' => ['address' => '909090909'],
 		],false);
 
-		# register - valid action, valid address
 		$party = $this->testParty();
+		
+		# register - valid action, valid address, invalid pkey
 		$res = $this->testValidateRequest([
-			'action' => 'register',
+			'action' => 'invite',
 			'params' => ['address' => $party->getAddress()],
-		],true);
-		$this->assertTrue(isset($res['data']));
-		$this->assertTrue($res['data'] === true);
+		],false);
+
+		# register - valid action, valid address, valid pkey
+		$req = [
+			'headers' => cog::generate_header(cog::generate_zero_hash(),rand(),$party->getAddress(),false),
+			'action' => 'invite',
+			'params' => [
+				'address' => $party->getAddress(),
+				'public_key' => $party->getPublicKey()
+			],
+		];
+		$sig = $party->sign($req);
+		$req['signature'] = $sig;
+//		emit(json_encode($req,JSON_PRETTY_PRINT));
+		$res = $this->testValidateRequest($req,true);
+		$this->assertTrue(isset($res['result']),"'result' field not found in result array:\n".print_r($res,1)."\nfor request:\n".print_r($req,1));
+		$this->assertTrue($res['result'] === 1);
 
 		# validate_address - valid action, valid address
 		$res = $this->testValidateRequest([
@@ -168,7 +184,11 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(strlen($res['data']) > 0);
 	}
 	
-	function testSmoke($terms = array()) {		
+	function testSmoke($terms = array()) {
+		return;
+
+		// Begin here if we're not debugging and delete everything above, thanks.
+	
 		/* TESTS/RULES/CAVEATS:
 		+ network's first prevHash should be zeroHash.
 		++ this should be assigned during object creation, retrieved from the database iff the working collection is empty.

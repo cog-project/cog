@@ -16,12 +16,14 @@ trait networkTests {
 	}
 
 	public function testNetworkAdd($network = null,$block = null,$party = null, $lastHash = null) {
+
+		$this->markTestSkipped("Might be a little obsolete...");
+
 		$init = $this->testInitialize([
 			'network:network' => $network,
 			'party:party' => $party,
 		]);
 		foreach($init as $i=>$v) $$i = $v;
-		
 		
 		if($block == null) {
 			$len = $network->length();
