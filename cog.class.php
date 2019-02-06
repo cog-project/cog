@@ -26,7 +26,7 @@ class cog {
 		$header = [
 			'version' => self::$version,
 			'prevHash' => $prevHash,
-			'timestamp' => gmdate('Y-m-d H:i:s\Z'),
+			'timestamp' => self::get_timestamp(),
 			'counter' => (string)$counter,
 			'address' => $address,
 		];
