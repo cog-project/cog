@@ -1,6 +1,6 @@
   <h2>Options</h2>
   <form action='client.php' method='post'>
-    <?php if($client->getNumAddresses()) { ?>
+    <?php if(!$client->getNumAddresses()) { ?>
     <h3>Request Invitation</h3>
     Your address has not been invited into the network yet.
     <div class='table subform'>
