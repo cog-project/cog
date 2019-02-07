@@ -58,6 +58,16 @@ class wallet {
 
 		return $res;
 	}
+
+	public function removeNode($data) {
+		$res = $this->request([
+			'action' => 'remove_node',
+			'params' => $data
+		],'localhost',80);
+
+		return $res;
+	}
+
 	public function listNodes() {
 		$res = $this->request([
 			'action' => 'list_nodes',
@@ -70,7 +80,10 @@ class wallet {
 		$timestamp = cog::get_timestamp();
 		$res = $this->request([
 			'action' => 'ping',
-			'params' => [1]
+			'params' => [
+				'ip_address' => $_SERVER['SERVER_HOST'],
+				'ip_port' => $_SERVER['SERVER_PORT']
+			]
 		],$data['ip_address'],$data['ip_port']);
 		$time = $res['time'];
 		$data = $res['data'];

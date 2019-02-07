@@ -103,6 +103,11 @@ class node {
 				// TODO no redundancies
 				$data = $this->network->addNode($params['params']);
 				break;
+			case 'remove_node':
+				// TODO validate params
+				// TODO no redundancies
+				$data = $this->network->removeNode($params['params']);
+				break;
 			case 'ping':
 				$data = [
 					'ip_address' => $_SERVER['SERVER_NAME'],
@@ -113,6 +118,15 @@ class node {
 					'local_datetime' => cog::get_timestamp(),
 					'request_time' => []
 				];
+				/*
+				$caller = [
+					'ip_address' => $_SERVER['REMOVE_ADDR'],
+					'ip_port' => (int)$params['params']['ip_port'],
+				];
+				$this->network->addNode($caller);
+				*/
+				// hold off on this for now
+
 				break;
 			default:
 				throw new Exception("Action '{$params['action']}' was not found.");

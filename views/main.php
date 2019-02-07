@@ -18,6 +18,9 @@ if(!empty($_POST)) {
 	if(isset($_POST['ping'])) {
 		$client->ping($_POST['ping']);
 	}
+	if(isset($_POST['remove_node'])) {
+		$client->removeNode($_POST['remove_node']);
+	}
 }
 
 if($client->hasParty()) {

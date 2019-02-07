@@ -149,6 +149,10 @@ class network {
 		}
 		return $res;
 	}
+	public function removeNode($data) {
+		$res = $this->dbClient->dbDelete("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
+		return $res;
+	}
 	public function listNodes() {
 		$out = [];
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",[]);
