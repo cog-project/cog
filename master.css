@@ -15,7 +15,15 @@ h1 {
     padding: 15px;
     background-color:#eee;
 }
-h2 { font-size:18px; color:#444; }
+h2 {
+    font-size:18px;
+    color:#444;
+}
+
+details > h2 {
+    border-bottom: 1px solid #DDD;
+}
+
 h3 { font-size:14px; color:#888; }
 
 .head, .foot, .main, h1 {
