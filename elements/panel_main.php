@@ -1,10 +1,4 @@
 <h2>Options</h2>
-    <h3>Invites</h3>
-    <?php
-    $invites = 0;
-    /* todo: list invited users, invite mining, identify spare invites, count for this section */
-    ?>
-    You currently have <b><?=$invites?></b> invites. <?=$invites ? "<b><a href=#>Invite New User</a></b>":"" ?>
 
 <h2>Contracts Summary</h2>
 <?php

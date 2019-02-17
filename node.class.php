@@ -64,9 +64,6 @@ class node {
 				if($this->network->hasAddress([$params['params']['address']])) {
 					throw new Exception("The specified address has already been registered with the network.");
 				}
-				if($this->network->isInitialized()) {
-					throw new Exception("Invalid prevHash provided.  This network has already been initialized.");
-				}
 				$this->validateSignature($params);
 				$res = $this->network->put($params);
 				break;
