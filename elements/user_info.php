@@ -1,4 +1,4 @@
-  <details>
+  <details <?=$_GET['expand'] == 'user' ? 'open' : ''?>>
     <summary>
       <h2 style='display:inline;'>User Info</h2>
     </summary>
