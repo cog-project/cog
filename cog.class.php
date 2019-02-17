@@ -1,6 +1,6 @@
 <?php
 class cog {
-	static $version = '0.0.0';
+	static $version = '0.0.1';
 
 	static function hash($x) {
 		if(is_array($x)) {
