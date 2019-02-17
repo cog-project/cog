@@ -4,6 +4,12 @@
 include 'main.php';
 include 'client_functions.php';
 
+### TODO find pernanent location for update matters ###
+
+shell_exec("git fetch github");
+
+###
+
 $client = wallet::init();
 loadView('main',[
 	'client' => $client
