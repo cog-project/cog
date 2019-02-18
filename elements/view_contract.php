@@ -1,4 +1,5 @@
 <h2>Contract Information</h2>
+<?php if(!empty($data)) { ?>
 <h3>Headers</h3>
 <table class='view'>
  <tbody>
@@ -55,3 +56,8 @@
   </tr>
  </tbody>
 </table>
+<?php } else { ?>
+<div class='warning'>
+  Failed to find transaction with hash:<br/><?=$_GET['view_contract']?>
+</div>
+<?php } ?>
