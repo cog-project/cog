@@ -12,7 +12,7 @@
     <h2>Software Version</h2>
     <p><b>v<?=cog::$version?></b></p>
 <?php
-$changed = strlen(trim(shell_exec("git diff github/master")));
+$changed = strlen(trim(shell_exec("git diff HEAD github/master")));
 if($changed) {
 ?>
    <p class='warning' id='update_message'>
