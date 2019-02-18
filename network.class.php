@@ -161,6 +161,29 @@ class network {
 		return $endpoints;
 	}
 
+	public function getHistory($start,$end) {
+		$zero = cog::generate_zero_hash();
+
+		$out = [];
+		while(count($end)) {
+			$keys = array_keys($end);
+			$data = $this->dbClient->queryByKey("{$this->db}.blocks",['hash' => ['$in' => $keys]]);
+			$transactions = [];
+			$end = [];
+			foreach($data as $t) {
+				$hash = $t['hash'];
+				$t = json_decode(json_encode($t),true);
+				$transactions[$hash] = $t;
+				if(!isset($start[$hash]) && $hash != $zero) {
+					$end[$hash] = true;
+				}
+			}
+			$out = array_merge($out,$transactions);
+		}
+
+		return $out;
+	}
+
 	public function addNode($data) {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
 		if(count($res)) {

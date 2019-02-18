@@ -119,6 +119,13 @@ class node {
 			case 'get_endpoints':
 				$data = $this->network->getEndpoints();
 				break;
+			case 'get_hash_history':
+				// TODO validate endpoints
+				// TODO validate startpoints
+				$end = $params['params']['endpoints'];
+				$start = $params['params']['startpoints'];
+				$data = $this->network->getHistory($start,$end);
+				break;
 			default:
 				throw new Exception("Action '{$params['action']}' was not found.");
 				break;

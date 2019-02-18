@@ -64,26 +64,62 @@ class wallet {
 		$this->addNode($data);
 
 		// condense db to endpoints and retrieve current
-		$data = $this->localRequest([
+		$response = $this->localRequest([
 			'action' => 'get_endpoints',
 			'params' => [1]
 		]);
-		$endpoints = $data['data'];
-
-		cog::print($endpoints);
+		$local_endpoints = $response['data'];
 
 		// build request - retrieve remote endpoints
+		// TODO all we actually need are hashes for the first stage
 		$ip = $data['ip_address'];
 		$port = $data['ip_port'];
+
 		$request = [
 			'action' => 'get_endpoints',
 			'params' => [1],
 		];
-		$data = $this->request($request,$ip,$port);
+		$response = $this->request($request,$ip,$port);
+		$remote_endpoints = $response['data'];
 
-		cog::print($data);
+		// convert remote endpoints to hashes
+		$remote_endpoint_hashes = [];
+		foreach($remote_endpoints as $e) {
+			$remote_endpoint_hashes[$e['hash']] = true;
+		}
 
-		//$this->request($request,$ip,$port);
+		// filter redundant endpoints
+		foreach($local_endpoints as $e) {
+			if(isset($remote_endpoint_hashes[$e['hash']])) {
+				unset($remote_endpoint_hashes[$e['hash']]);
+			}
+		}
+
+		// filter redundant local endpoints
+		$local_endpoint_hashes = [];
+		foreach($local_endpoints as $e) {
+			if(!isset($remote_endpoint_hashes[$e['hash']])) {
+				$local_endpoint_hashes[$e['hash']] = true;
+			}
+		}
+
+		// request histories of new endpoints, stop at local endpoints
+
+		$response = $this->request([
+			'action' => 'get_hash_history',
+			'params' => [
+				'endpoints' => $remote_endpoint_hashes,
+				'startpoints' => $local_endpoint_hashes,
+			]
+		],$ip,$port);
+
+		cog::print($response);
+
+		// validate transactions
+
+		// store transactions
+
+		// update endpoints
 	}
 
 	public function removeNode($data) {
@@ -134,6 +170,7 @@ class wallet {
 		$scheme = ($port == 443 ? "https" : "http"); # TODO force ssl or something
 
 		$url = "{$scheme}://{$server}/cog/server.php";
+
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL,$url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -156,7 +193,7 @@ class wallet {
 
 		$assoc = json_decode($res,true);
 		if(!is_array($assoc)) {
-			cog::print("Failed to decode response.");
+			cog::print("Failed to decode response ({$url}).");
 			cog::print("Request:\n".print_r($params,1));
 			cog::print("Response:\n".$res);
 		}
