@@ -146,18 +146,18 @@ class network {
 		foreach($new_endpoints as $t) {
 			// preprocessing, may not be necessary
 			$t = json_decode(json_encode($t),true);
-			$ep = $t;
-			unset($ep['_id']);
+			unset($t['_id']);
 			$exists = $this->endpointExists($t['hash']);
+
 			if(!$exists) {
 				// add transaction to endpoints
-				$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$ep);
+				$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$t);
 				// remove referenced transaction from endpoints
 				$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
 				// mark transasction as processed
 				$t['processed'] = true;
-				unset($t['_id']);
-				$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t);
+error_log("updating cog.blocks for address {$t['request']['params']['address']} and hash {$t['hash']}");
+				$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t,['hash'=>$t['hash']]);
 			}
 		}
 	}
@@ -188,6 +188,7 @@ class network {
 				$out['invalid'] = $t['hash'];
 			}
 		}
+
 		// update endpoints
 		$this->updateEndpoints();
 		return $out;
@@ -235,7 +236,7 @@ class network {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
 		if(count($res)) {
 			$data['_id'] = $res[0]->_id;
-			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data);
+			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data,['ip_address','ip_port']);
 		} else {
 			$res = $this->dbClient->dbInsert("{$this->db}.nodes",$data);
 		}

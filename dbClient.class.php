@@ -49,14 +49,15 @@ class dbClient {
 		return $res;
 	}
 	
-	public function dbUpdate($db,$key) {
-		return $this->dbUpdateMultiple($db,[$key]);
+	public function dbUpdate($db,$key,$filter) {
+		return $this->dbUpdateMultiple($db,[$key],$filter);
 	}
-	public function dbUpdateMultiple($db,$key = []) {
+	public function dbUpdateMultiple($db,$key = [], $filter = []) {
 		$bulk = new MongoDB\Driver\BulkWrite;
 		foreach($key as $v) {
+			$criteria = $filter;
 			$bulk->update(
-				['ip_address' => $v['ip_address'], 'ip_port' => $v['ip_port']], //filter
+				$criteria, //filter
 				$v //replacement
 			);
 		}
