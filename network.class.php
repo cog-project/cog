@@ -145,15 +145,14 @@ class network {
 		$new_endpoints = $this->dbClient->queryByKey("{$this->db}.blocks",['processed'=>['$exists'=>false]]);
 		foreach($new_endpoints as $t) {
 			// preprocessing, may not be necessary
-			$t = (array)$t;
-			unset($t['_id']);
+			$t = json_decode(json_encode($t),true);
 			// add transaction to endpoints
 			$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$t);
 			// remove referenced transaction from endpoints
 			$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
 			// mark transasction as processed
 			$t['processed'] = true;
-			$this->dbClient->dbUpdate("{$this->db}.blocks",(array)$t);
+			$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t);
 		}
 	}
 	public function getEndpoints() {
