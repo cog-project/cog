@@ -126,6 +126,10 @@ class node {
 				$start = $params['params']['startpoints'];
 				$data = $this->network->getHistory($start,$end);
 				break;
+			case 'insert_transactions':
+				$info = $this->network->updateTransactions($params['params']['data']);
+				$data = $info;
+				break;
 			default:
 				throw new Exception("Action '{$params['action']}' was not found.");
 				break;
@@ -151,6 +155,12 @@ class node {
 		} catch (Exception $e) {
 			$out['result'] = 0;
 			$out['message'] = $e->getMessage()."\nRequest:\n".json_encode($params,JSON_PRETTY_PRINT);
+			$out['trace'] = $e->getTrace();
+			$out['_REQUEST'] = $_REQUEST;
+		}
+
+		if(!empty($GLOBALS['misc'])) {
+			$out['misc'] = $GLOBALS['misc'];
 		}
 		
 		$json = json_encode($out,JSON_PRETTY_PRINT);

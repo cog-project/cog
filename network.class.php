@@ -146,15 +146,62 @@ class network {
 		foreach($new_endpoints as $t) {
 			// preprocessing, may not be necessary
 			$t = json_decode(json_encode($t),true);
-			// add transaction to endpoints
-			$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$t);
-			// remove referenced transaction from endpoints
-			$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
-			// mark transasction as processed
-			$t['processed'] = true;
-			$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t);
+			$ep = $t;
+			unset($ep['_id']);
+			$exists = $this->endpointExists($t['hash']);
+			if(!$exists) {
+				// add transaction to endpoints
+				$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$ep);
+				// remove referenced transaction from endpoints
+				$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
+				// mark transasction as processed
+				$t['processed'] = true;
+				unset($t['_id']);
+				$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t);
+			}
 		}
 	}
+
+	public function endpointExists($hash) {
+		$data = $this->dbClient->queryByKey("{$this->db}.endpoints",['hash'=>$hash]);
+		if(count($data)) return true;
+		else return false;
+	}
+
+	public function updateTransactions($data) {
+		$out = ['valid' => [], 'invalid' => []];
+		foreach(array_reverse($data) as $hash => $t) {
+			// prepare data
+			unset($t['_id']);
+			unset($t['processed']);
+
+			$hash = $t['hash'];
+			$req = $t['request'];
+
+			// validate transaction
+			$valid = $this->validateTransaction($hash,$t);
+			if($valid) {
+				// store transaction
+				$this->dbClient->dbInsert("{$this->db}.blocks",$t);
+				$out['valid'] = $t['hash'];
+			} else {
+				$out['invalid'] = $t['hash'];
+			}
+		}
+		// update endpoints
+		$this->updateEndpoints();
+		return $out;
+	}
+
+	public function validateTransaction($hash,$req) {
+		// TODO
+		$redundant = $this->dbClient->queryByKey("{$this->db}.blocks",['hash' => $hash]);
+		if(count($redundant)) {
+			return false;
+		}
+		return true;
+	}
+
 	public function getEndpoints() {
 		$this->updateEndpoints();
 		$endpoints = $this->dbClient->queryByKey("{$this->db}.endpoints",[]);
@@ -277,11 +324,8 @@ class network {
 		return ($hash == cog::generate_zero_hash());
 	}
 	public function isInitialized() {
-		$table = "{$this->db}.{$this->collection}";
-		$res = $this->dbClient->dbQuery(
-			$table,
-			['request.headers.version' => "0.0.0"]#cog::generate_zero_hash()]
-		)->toArray();
+		$table = "{$this->db}.blocks";
+		$res = $this->dbClient->dbQuery($table,['request.headers.prevHash' => cog::generate_zero_hash()]);
 		return count($res) > 0;
 	}
 	public function validateContract($contract) {
@@ -434,32 +478,6 @@ class network {
 		$party = $this->getParty($partyAddr);
 		$verification = openssl_verify($contract->toString(false),base64_decode($signature),$party->getPublicKey());
 		return $verification;
-	}
-	public function sign($hash,$signature,$partyAddr,$type = 'todo') {
-		$contract = $this->getContract($hash);
-		$verification = $this->verifySignature($contract,$signature,$partyAddr);
-
-		if(!$verification) {
-			throw new Exception("Failed to verify signature '$signature' for address '$partyAddr' in hash '$hash'");
-			return false;
-		}
-
-		$contract = new contract();
-		$contract->setTerms([
-			'action' => 'sign',
-			'params' => [
-				'address' => $partyAddr,
-				'signature' => $signature,
-			],
-		]);
-		$contract->setTimestamp(gmdate('Y-m-d H:i:s\Z'));
-		$contract->setPrevHash($hash);
-		$contract->setNonce("{$partyAddr}!!"); #todo
-		# no signature required on this signature i guess
-
-		#this function is obsolete
-
-		return true;
 	}
 
 	public function genComment($hash,$partyAddr,$type = 'comment',$comment) {

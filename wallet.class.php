@@ -68,6 +68,7 @@ class wallet {
 			'action' => 'get_endpoints',
 			'params' => [1]
 		]);
+
 		$local_endpoints = $response['data'];
 
 		// build request - retrieve remote endpoints
@@ -103,23 +104,22 @@ class wallet {
 			}
 		}
 
-		// request histories of new endpoints, stop at local endpoints
+		if(!empty($remote_endpoint_hashes)) {
+			// request histories of new endpoints, stop at local endpoints
+			$response = $this->request([
+				'action' => 'get_hash_history',
+				'params' => [
+					'endpoints' => $remote_endpoint_hashes,
+					'startpoints' => $local_endpoint_hashes,
+				]
+			],$ip,$port);
 
-		$response = $this->request([
-			'action' => 'get_hash_history',
-			'params' => [
-				'endpoints' => $remote_endpoint_hashes,
-				'startpoints' => $local_endpoint_hashes,
-			]
-		],$ip,$port);
-
-		cog::print($response);
-
-		// validate transactions
-
-		// store transactions
-
-		// update endpoints
+			// validate and store transactions, and update endpoints
+			$res = $this->localRequest([
+				'action' => 'insert_transactions',
+				'params' => ['data' => $response['data']]
+			]);
+		}
 	}
 
 	public function removeNode($data) {
