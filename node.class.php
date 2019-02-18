@@ -115,15 +115,9 @@ class node {
 					'local_datetime' => cog::get_timestamp(),
 					'request_time' => []
 				];
-				/*
-				$caller = [
-					'ip_address' => $_SERVER['REMOVE_ADDR'],
-					'ip_port' => (int)$params['params']['ip_port'],
-				];
-				$this->network->addNode($caller);
-				*/
-				// hold off on this for now
-
+				break;
+			case 'get_endpoints':
+				$data = $this->network->getEndpoints();
 				break;
 			default:
 				throw new Exception("Action '{$params['action']}' was not found.");

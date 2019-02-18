@@ -40,6 +40,7 @@
         <td><?=$node['ping_datetime'] ? : "<span class='gray'>N/A</span>"?></td>
         <td><?=$node['local_datetime'] ? : "<span class='gray'>N/A</span>"?></td>
         <td>
+
           <form action='client.php?expand=network' method='POST'>
             <input type='hidden' name='ping[ip_address]' value='<?=$node['ip_address']?>'>
             <input type='hidden' name='ping[ip_port]' value='<?=$node['ip_port']?>'>
@@ -52,6 +53,11 @@
             <input type='submit' value='Remove'>
           </form>
 
+          <form action='client.php?expand=network' method='POST'>
+            <input type='hidden' name='sync[ip_address]' value='<?=$node['ip_address']?>'>
+            <input type='hidden' name='sync[ip_port]' value='<?=$node['ip_port']?>'>
+            <input type='submit' value='Sync'>
+          </form>
 <!--
             <input type='hidden' name='blacklist_node[ip_address]' value='<?=$node['ip_address']?>'>
             <input type='hidden' name='blacklist_node[ip_port]' value='<?=$node['ip_port']?>'>

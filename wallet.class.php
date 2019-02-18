@@ -59,6 +59,33 @@ class wallet {
 		return $res;
 	}
 
+	public function sync($data) {
+		// add node if it isn't already listed
+		$this->addNode($data);
+
+		// condense db to endpoints and retrieve current
+		$data = $this->localRequest([
+			'action' => 'get_endpoints',
+			'params' => [1]
+		]);
+		$endpoints = $data['data'];
+
+		cog::print($endpoints);
+
+		// build request - retrieve remote endpoints
+		$ip = $data['ip_address'];
+		$port = $data['ip_port'];
+		$request = [
+			'action' => 'get_endpoints',
+			'params' => [1],
+		];
+		$data = $this->request($request,$ip,$port);
+
+		cog::print($data);
+
+		//$this->request($request,$ip,$port);
+	}
+
 	public function removeNode($data) {
 		$res = $this->request([
 			'action' => 'remove_node',

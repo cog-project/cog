@@ -1,15 +1,19 @@
 <h2>Options</h2>
 
-<h2>Contracts Summary</h2>
+<ul>
+  <li>N/A</li>
+</ul>
+
+<h2>Transaction Summary</h2>
 <?php
 $cats = [
 	'messages' => 'Messages',
 	'disputed' => 'Disputed Contracts',
 	'outstanding' => 'Outstanding Contracts',
-	'requests' => 'Contract Requests',
-	'pending' => 'Pending Contracts',
+	'requests' => 'Transaction Requests',
+	'pending' => 'Pending Transactions',
 	'active' => 'Active Contracts',
-	'completed' => 'Completed Contracts',
+	'completed' => 'Completed Transactions',
 ];
 
 foreach($cats as $k => $v) {
@@ -53,4 +57,5 @@ foreach($cats as $k => $v) {
 </table>
 <?php } ?>
 
+<h2>Tracked Transactions</h2>
 

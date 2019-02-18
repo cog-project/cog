@@ -137,8 +137,31 @@ class network {
 	}
 	public function getNumAddresses() {
 	# TODO test
-		return $this->dbClient->getCount("{$this->db}","{$this->collection}",['terms.action'=>'invite']);
+		return $this->dbClient->getCount("{$this->db}.{$this->collection}",['terms.action'=>'invite']);
 	}
+
+	public function updateEndpoints() {
+		// query transactions that have not been factored into endpoints
+		$new_endpoints = $this->dbClient->queryByKey("{$this->db}.blocks",['processed'=>['$exists'=>false]]);
+		foreach($new_endpoints as $t) {
+			// preprocessing, may not be necessary
+			$t = (array)$t;
+			unset($t['_id']);
+			// add transaction to endpoints
+			$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$t);
+			// remove referenced transaction from endpoints
+			$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
+			// mark transasction as processed
+			$t['processed'] = true;
+			$this->dbClient->dbUpdate("{$this->db}.blocks",(array)$t);
+		}
+	}
+	public function getEndpoints() {
+		$this->updateEndpoints();
+		$endpoints = $this->dbClient->queryByKey("{$this->db}.endpoints",[]);
+		return $endpoints;
+	}
+
 	public function addNode($data) {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
 		if(count($res)) {

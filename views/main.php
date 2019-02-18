@@ -12,11 +12,15 @@ if(!empty($_POST)) {
 			$_POST['initialize_network']['public_key']
 		);
 	}
+
 	if(isset($_POST['add_node'])) {
 		$client->addNode($_POST['add_node']);
 	}
 	if(isset($_POST['ping'])) {
 		$client->ping($_POST['ping']);
+	}
+	if(isset($_POST['sync'])) {
+		$client->sync($_POST['sync']);
 	}
 	if(isset($_POST['remove_node'])) {
 		$client->removeNode($_POST['remove_node']);
