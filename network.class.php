@@ -171,11 +171,11 @@ class network {
 			$transactions = [];
 			$end = [];
 			foreach($data as $t) {
-				$hash = $t['hash'];
 				$t = json_decode(json_encode($t),true);
+				$hash = $t['hash'];
 				$transactions[$hash] = $t;
 				if(!isset($start[$hash]) && $hash != $zero) {
-					$end[$hash] = true;
+					$end[$t['prevHash']] = true;
 				}
 			}
 			$out = array_merge($out,$transactions);
