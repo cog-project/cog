@@ -9,7 +9,7 @@ require dirname(__FILE__).'/request.class.php';
 require dirname(__FILE__).'/session.class.php';
 require dirname(__FILE__).'/party.class.php';
 require dirname(__FILE__).'/network.class.php';
-require dirname(__FILE__).'/lib/mongo/vendor/autoload.php';
+require dirname(__FILE__).'/lib/mongofill/vendor/autoload.php';
 
 # for appending contracts
 class addendum extends contract {
