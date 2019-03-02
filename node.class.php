@@ -116,6 +116,11 @@ class node {
 					'request_time' => []
 				];
 
+				$config = $this->wallet->getConfig();
+				if(!empty($config['nickname'])) {
+					$data['nickname'] = $config['nickname'];
+				}
+
 				if(!empty($params['params']['remote'])) {
 					// TODO validate fields, signature
 					$this->network->addNode($params['params']['remote']);
