@@ -171,9 +171,9 @@ class wallet {
 			$request['params']['remote'] = [
 				'ip_address' => $config['ip_address'],
 				'ip_port' => $config['ip_port'],
-				'nickname' => $config['nickname'],
-				'public_key' => $config['public_key'],
 				'address' => $config['address'],
+				'public_key' => $config['public_key'],
+				'nickname' => $config['nickname'],
 			];
 		}
 		$res = $this->request($request,$data['ip_address'],$data['ip_port']);

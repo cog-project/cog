@@ -115,6 +115,11 @@ class node {
 					'local_datetime' => cog::get_timestamp(),
 					'request_time' => []
 				];
+
+				if(!empty($params['params']['remote'])) {
+					// TODO validate fields, signature
+					$this->network->addNode($params['params']['remote']);
+				}
 				break;
 			case 'get_endpoints':
 				$data = $this->network->getEndpoints();
