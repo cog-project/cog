@@ -236,7 +236,9 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
 		if(count($res)) {
 			$data['_id'] = $res[0]->_id;
-			$data['last_request'] = $res[0]->last_request;
+			if(empty($data['ping_datetime'])) {
+				$data['ping_datetime'] = $res[0]->ping_datetime;
+			}
 			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data,['ip_address'=>$data['ip_address'],'ip_port'=>$data['ip_port']]);
 		} else {
 			$res = $this->dbClient->dbInsert("{$this->db}.nodes",$data);
