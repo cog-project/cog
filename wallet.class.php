@@ -10,6 +10,16 @@ class wallet {
 		}
 	}
 
+	public function getConfig() {
+		$data = $this->localRequest([
+			'action' => 'get_config',
+			'params' => [
+				'address' => $this->getAddress()
+			]
+		]);
+		return $data['data'];
+	}
+
 	public static function init() {
 		return new wallet();
 	}
@@ -131,6 +141,14 @@ class wallet {
 		return $res;
 	}
 
+	public function config($data) {
+		$res = $this->localRequest([
+			'action' => 'config',
+			'params' => $data
+		]);
+		return $res;
+	}
+
 	public function listNodes() {
 		$res = $this->request([
 			'action' => 'list_nodes',
@@ -141,13 +159,24 @@ class wallet {
 
 	public function ping($data) {
 		$timestamp = cog::get_timestamp();
-		$res = $this->request([
+		$request = [
 			'action' => 'ping',
 			'params' => [
 				'ip_address' => $_SERVER['SERVER_HOST'],
 				'ip_port' => $_SERVER['SERVER_PORT']
 			]
-		],$data['ip_address'],$data['ip_port']);
+		];
+		$config = $this->getConfig();
+		if(!empty($config)) {
+			$request['params']['remote'] = [
+				'ip_address' => $config['ip_address'],
+				'ip_port' => $config['ip_port'],
+				'nickname' => $config['nickname'],
+				'public_key' => $config['public_key'],
+				'address' => $config['address'],
+			];
+		}
+		$res = $this->request($request,$data['ip_address'],$data['ip_port']);
 		$time = $res['time'];
 		$data = $res['data'];
 
@@ -196,6 +225,9 @@ class wallet {
 			cog::print("Failed to decode response ({$url}).");
 			cog::print("Request:\n".print_r($params,1));
 			cog::print("Response:\n".$res);
+		}
+		if(!empty($assoc['misc'])) {
+			cog::print($assoc['misc']);
 		}
 		$assoc['time'] = $time;
 		return $assoc;

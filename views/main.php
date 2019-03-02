@@ -25,6 +25,9 @@ if(!empty($_POST)) {
 	if(isset($_POST['remove_node'])) {
 		$client->removeNode($_POST['remove_node']);
 	}
+	if(isset($_POST['config'])) {
+		$client->config($_POST['config']);
+	}
 }
 
 if($client->hasParty()) {

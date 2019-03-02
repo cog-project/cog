@@ -10,7 +10,9 @@
 
     <h2>Nodes</h2>
     <!-- TODO responsive -->
+    <h3>Node Configuration</h3>
     <table class='view small'>
+      <!-- Localhost -->
       <tr>
         <th>Name</th>
         <th>IP</th>
@@ -19,19 +21,6 @@
         <th>Local Time</th>
         <th>Options</th>
       </tr>
-      <!-- Localhost -->
-      <!--
-      <tr>
-        <td><span class='gray'>(You)</span></td>
-        <td>localhost:80</td>
-        <td><?=$client->getAddress()?></td>
-        <td><?=cog::get_timestamp()?></td>
-        <td><?=cog::get_timestamp()?></td>
-        <td>
-          <span class='gray'>N/A</span>
-        </td>
-      </tr>
-      -->
       <?php foreach($client->listNodes() as $node) { ?>
       <tr>
         <td><?=$node['nickname'] ? : "<span class='gray'>N/A</span>"?></td>
@@ -69,7 +58,25 @@
       <?php } ?>
       <tr>
         <td colspan=6>
-          <h3>Add or Update Node</h3>
+          <?php $config = $client->getConfig(); ?>
+          <h3>
+	    Configure Local Node
+	    <?php if(!empty($config['ip_address']) && !empty($config['ip_port'])) { ?>
+	      <span class='green'>(Active)</span>
+            <?php } else { ?>
+	      (Inactive)
+	    <?php } ?>
+	  </h3>
+          <form action='client.php?expand=network' method='POST'>
+            <input type='text' name='config[ip_address]' placeholder='IP Address' value='<?=$config['ip_address'] ? : ""?>'>
+            <input type='text' name='config[ip_port]' placeholder='Port' size=5  value='<?=$config['ip_port'] ? : ""?>'>
+            <input type='text' name='config[nickname]' placeholder='Nickname (Optional)' size=15 value='<?=$config['nickname'] ? : ""?>'>
+
+	    <input type='hidden' name='config[public_key]' value='<?=$client->getPublicKey()?>'>
+	    <input type='hidden' name='config[address]' value='<?=$client->getAddress()?>'>
+            <input type='submit' value='Update'>
+          </form>
+          <h3>Add or Update Remote Node</h3>
           <form action='client.php?expand=network' method='POST'>
             <input type='text' name='add_node[ip_address]' placeholder='IP Address'>
             <input type='text' name='add_node[ip_port]' placeholder='Port' size=5>

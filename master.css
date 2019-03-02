@@ -147,6 +147,10 @@ span.gray {
     color:#aaa;
 }
 
+span.green {
+    color:#0a0;
+}
+
 @media only screen and (max-width: 768px) {
   body { width:100%; }
   h1 { font-size:20px; text-align:center; }

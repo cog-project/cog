@@ -343,6 +343,25 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 		$res = $this->dbClient->dbInsert("{$this->db}.{$this->collection}",$insert);
 		return $res;
 	}
+
+	public function setConfig($data) {
+		$existing = $this->dbClient->queryByKey("{$this->db}.config",['address' => $data['address']]);
+		if(count($existing)) {
+			$res = $this->dbClient->dbUpdate("{$this->db}.config",$data,['address'=>$data['address']]);
+		} else {
+			$res = $this->dbClient->dbInsert("{$this->db}.config",$data);
+		}
+		return $res;
+	}
+
+	public function getConfig($addr) {
+		$existing = $this->dbClient->queryByKey("{$this->db}.config",['address' => $addr]);
+		if(count($existing)) {
+			return $existing[0];
+		}
+		return null;
+	}
+
 	public function put_old($contract) {
 		if(!$this->validateContract($contract)) {
 			return null;

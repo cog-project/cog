@@ -130,6 +130,14 @@ class node {
 				$info = $this->network->updateTransactions($params['params']['data']);
 				$data = $info;
 				break;
+			case 'config':
+				// TODO validate
+				$data = $this->network->setConfig($params['params']);
+				break;
+			case 'get_config':
+				// TODO validate
+				$data = $this->network->getConfig($params['params']['address']);
+				break;
 			default:
 				throw new Exception("Action '{$params['action']}' was not found.");
 				break;
