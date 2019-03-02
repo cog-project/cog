@@ -159,6 +159,10 @@ class wallet {
 
 	public function ping($data) {
 		$timestamp = cog::get_timestamp();
+		$config = $this->getConfig();
+
+		// Generate Request
+
 		$request = [
 			'action' => 'ping',
 			'params' => [
@@ -166,7 +170,9 @@ class wallet {
 				'ip_port' => $_SERVER['SERVER_PORT']
 			]
 		];
-		$config = $this->getConfig();
+
+		// Optionally Pass Local Details
+
 		if(!empty($config)) {
 			$request['params']['remote'] = [
 				'ip_address' => $config['ip_address'],
@@ -174,14 +180,28 @@ class wallet {
 				'address' => $config['address'],
 				'public_key' => $config['public_key'],
 				'nickname' => $config['nickname'],
+				'local_datetime' => $timestamp
 			];
 		}
+
+		// Submit Request
+
 		$res = $this->request($request,$data['ip_address'],$data['ip_port']);
-		$time = $res['time'];
+
+		// Response Data
+
 		$data = $res['data'];
 
-		$data['ping_datetime'] = $timestamp;
+		// Request Time Data
+
+		$time = $res['time'];
 		$data['request_time'] = $time;
+
+		// Include Time of Last Request
+
+		$data['ping_datetime'] = $timestamp;
+
+		// Store Data		
 
 		$this->addNode($data);
 	}

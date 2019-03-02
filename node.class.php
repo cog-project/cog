@@ -98,7 +98,11 @@ class node {
 			case 'add_node':
 				// TODO validate params
 				// TODO no redundancies
-				$data = $this->network->addNode($params['params']);
+				$data = $params['params'];
+				if(empty($data['ip_address']) || empty($data['ip_port'])) {
+					throw new Exception('An invalid address or port was provided.');
+				}
+				$data = $this->network->addNode($data);
 				break;
 			case 'remove_node':
 				// TODO validate params
@@ -123,6 +127,7 @@ class node {
 
 				if(!empty($params['params']['remote'])) {
 					// TODO validate fields, signature
+					$params['remote']['ping_datetime'] = cog::get_timestamp();
 					$this->network->addNode($params['params']['remote']);
 				}
 				break;
