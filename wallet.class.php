@@ -163,8 +163,15 @@ class wallet {
 			'params' => [1]
 		],$data['ip_address'],$data['ip_port']);
 		$data = $res['data'];
+
+		$existing = $this->listNodes();
+		$exclude = [];
+		foreach($existing as $peer) {
+			$exclude["{$peer['ip_address']}:{$peer['ip_port']}:{$peer['address']}"] = true;
+		}
+
 		foreach($data as &$peer) {
-			if($peer['ip_address'] == '127.0.0.1' || $peer['ip_address'] == 'localhost']) {
+			if($peer['ip_address'] == '127.0.0.1' || $peer['ip_address'] == 'localhost' || isset($exclude["{$peer['ip_address']}:{$peer['ip_port']}:{$peer['address']}"])) {
 				continue;
 			}
 			unset($peer['_id']);
