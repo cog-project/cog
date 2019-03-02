@@ -47,6 +47,12 @@
             <input type='hidden' name='sync[ip_port]' value='<?=$node['ip_port']?>'>
             <input type='submit' value='Sync'>
           </form>
+
+          <form action='client.php?expand=network' method='POST'>
+            <input type='hidden' name='request_peers[ip_address]' value='<?=$node['ip_address']?>'>
+            <input type='hidden' name='request_peers[ip_port]' value='<?=$node['ip_port']?>'>
+            <input type='submit' value='Request Peers'>
+          </form>
 <!--
             <input type='hidden' name='blacklist_node[ip_address]' value='<?=$node['ip_address']?>'>
             <input type='hidden' name='blacklist_node[ip_port]' value='<?=$node['ip_port']?>'>

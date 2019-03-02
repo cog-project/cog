@@ -157,6 +157,22 @@ class wallet {
 		return $res['data'];
 	}
 
+	public function requestPeers($data) {
+		$res = $this->request([
+			'action' => 'list_nodes',
+			'params' => [1]
+		],$data['ip_address'],$data['ip_port']);
+		$data = $res['data'];
+		foreach($data as &$peer) {
+			unset($peer['_id']);
+			$peer['local_datetime'] = null;
+			$peer['ping_datetime'] = null;
+			$peer['request_time'] = null;
+			$this->addNode($peer);
+		}
+		return $data;
+	}
+
 	public function ping($data) {
 		$timestamp = cog::get_timestamp();
 		$config = $this->getConfig();

@@ -28,6 +28,9 @@ if(!empty($_POST)) {
 	if(isset($_POST['config'])) {
 		$client->config($_POST['config']);
 	}
+	if(isset($_POST['request_peers'])) {
+		$client->requestPeers($_POST['request_peers']);
+	}
 }
 
 if($client->hasParty()) {
