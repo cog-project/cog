@@ -164,6 +164,9 @@ class wallet {
 		],$data['ip_address'],$data['ip_port']);
 		$data = $res['data'];
 		foreach($data as &$peer) {
+			if($peer['ip_address'] == '127.0.0.1' || $peer['ip_address'] == 'localhost']) {
+				continue;
+			}
 			unset($peer['_id']);
 			$peer['local_datetime'] = null;
 			$peer['ping_datetime'] = null;
