@@ -79,7 +79,7 @@ class network {
 			# Pending
 			# Active
 			# Completed
-			$out['completed'][$v->hash] = $v;
+			$out['completed'][$v['hash']] = $v;
 		}
 		return $out;
 	}
@@ -235,9 +235,9 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 	public function addNode($data) {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
 		if(count($res)) {
-			$data['_id'] = $res[0]->_id;
+			$data['_id'] = $res[0]['_id'];
 			if(empty($data['ping_datetime'])) {
-				$data['ping_datetime'] = $res[0]->ping_datetime;
+				$data['ping_datetime'] = $res[0]['ping_datetime'];
 			}
 			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data,['ip_address'=>$data['ip_address'],'ip_port'=>$data['ip_port']]);
 		} else {
@@ -402,10 +402,10 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 					'sort' => ['timestamp' => -1],
 					'limit' => 1,
 				]
-			)->toArray();
+			);
 			if(count($res)) {
 				$latest = array_pop($res);
-				$this->lastHash = $latest->hash;
+				$this->lastHash = $latest['hash'];
 			} else {
 				$this->lastHash = $this->getZeroHash();
 			}
