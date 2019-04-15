@@ -1,5 +1,15 @@
 <?php
 trait networkTests {
+	function testListNodes() {
+		$network = $this->testNetwork();
+		$network->addNode([
+			'ip_address' => '127.0.0.1',
+			'ip_port' => 80,
+		]);
+		$data = $network->listNodes();
+		$this->assertTrue(count($data) > 0);
+	}
+
 	public function testNetwork($new = false) {
 		$this->assertTrue(class_exists("network"));
 		$n = new network();
