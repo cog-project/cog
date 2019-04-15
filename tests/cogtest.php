@@ -49,23 +49,14 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 	function initialize_collection() {
 		emit("Initializing db collection",true);
-
-		try {
-			$this->testMongoCreateCollection("cogTest","blocks");
-		} catch (Exception $e) {
-			emit($e->getMessage());
-		}
-		$this->assertTrue(empty($e));
+		$this->testMongoCreateCollection("cogTest","blocks");
+		$this->testMongoDropCollection("cogTest","nodes");
 	}
 
 	function delete_collection() {
 		emit("Deleting db collection",true);
-		try {
-			$this->testMongoDropCollection("cogTest","blocks");
-		} catch (Exception $e) {
-			emit($e->getMessage());
-		}
-		$this->assertTrue(empty($e));
+		$this->testMongoDropCollection("cogTest","blocks");
+		$this->testMongoDropCollection("cogTest","nodes");
 	}
 
 	function testInitialize($params = array()) {
@@ -108,7 +99,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		return $res;
 	}
 
-	function testValidateRequest($params = [], $bool = true, $verbose = true /* should be false by default */) {
+	function testValidateRequest($params = [], $bool = true, $verbose = false /* should be false by default */) {
 		$this->testServEmpty();
 		if(!empty($params)) {
 			$params = array_merge($params,['environment' => 'cogTest']);
