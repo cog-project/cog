@@ -32,6 +32,7 @@ trait contractTests {
 	}
 	
 	public function testAddendum() {
+		$this->markTestSkipped();
 		$this->assertTrue(class_exists("addendum"));
 	}
 

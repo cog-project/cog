@@ -10,9 +10,4 @@ require dirname(__FILE__).'/session.class.php';
 require dirname(__FILE__).'/party.class.php';
 require dirname(__FILE__).'/network.class.php';
 require dirname(__FILE__).'/mongointerface.class.php';
-
-# for appending contracts
-class addendum extends contract {
-	
-}
 ?>
