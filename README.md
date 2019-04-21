@@ -12,7 +12,6 @@ Exploring the application of cryptography to mutual credit, and alternative appr
 
 ### Other Libraries Used:
 
-* [MongoDB PHP Driver](https://github.com/mongodb/mongo-php-driver)
 * [PHPSandbox](https://github.com/Corveda/PHPSandbox)
 * [Future](https://github.com/mnlesane/future)
 * [PHPUnit](https://github.com/sebastianbergmann/phpunit)
