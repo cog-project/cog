@@ -76,14 +76,29 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		return $out;
 	}
 
+	function testWallet() {
+		$this->assertTrue(class_exists('wallet'));
+		$wallet = new wallet();
+		$wallet->setEnvironment('cogTest');
+		return $wallet;
+	}
+
 	function nodeRequest($params = []) {
-		$url = 'http://localhost/cog/server.php';
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,$url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-		$res = curl_exec($ch);
-		curl_close($ch);
+		$req = new request(null);
+		if(!is_object(cog::$wallet)) {
+			$wallet = $this->testWallet();
+		}
+
+		if(isset($params['action'])) {
+			$req->setAction($params['action']);
+		}
+		if(isset($params['params'])) {
+			$req->setParams($params['params']);
+		}
+		if(isset($params['header'])) {
+			$req->setHeaders($params['headers']);
+		}
+		$res = $req->submit('localhost','80',false,true);
 		$this->assertTrue(strlen($res) > 0);
 		$assoc = json_decode($res,true);
 		$this->assertTrue(is_array($assoc), $res);
@@ -113,7 +128,30 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		}
 	}
 
+	function testSignature() {
+		$wallet = new wallet();
+		$req = ['pkey'=>$wallet->getPublicKey()];
+		$sig1 = $wallet->sign(json_encode($req));
+
+		$enc1 = json_encode($req);
+#		$this->testParty($wallet->getParty(),$enc1);
+
+		$req['signature'] = $sig1;
+		$req = json_decode(json_encode($req),true);
+		$sig2 = $req['signature'];
+		unset($req['signature']);
+
+		$enc2 = json_encode($req);
+
+		$this->assertTrue(sha1($enc1) == sha1($enc2));
+		$verify = cog::verify_signature($enc2,$sig1,$req['pkey']);
+		$this->assertTrue($verify == 1,"Failed to verify signature.");
+	}
+
 	function testValidateAddrRequest() {
+		$wallet = $this->testWallet();
+		$party = cog::get_wallet()->getParty();
+
 		# validate_address - no action
 		$this->testValidateRequest([
 			'blah',
@@ -141,8 +179,6 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			'action' => 'invite',
 			'params' => ['address' => '909090909'],
 		],false);
-
-		$party = $this->testParty();
 		
 		# register - valid action, valid address, invalid pkey
 		$res = $this->testValidateRequest([
@@ -151,20 +187,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		],false);
 
 		# register - valid action, valid address, valid pkey
-		$req = [
-			'headers' => cog::generate_header(cog::generate_zero_hash(),rand(),$party->getAddress(),false),
-			'action' => 'invite',
-			'params' => [
-				'address' => $party->getAddress(),
-				'public_key' => $party->getPublicKey()
-			],
-		];
-		$sig = $party->sign($req);
-		$req['signature'] = $sig;
-//		emit(json_encode($req,JSON_PRETTY_PRINT));
-		$res = $this->testValidateRequest($req,true);
-		$this->assertTrue(isset($res['result']),"'result' field not found in result array:\n".print_r($res,1)."\nfor request:\n".print_r($req,1));
-		$this->assertTrue($res['result'] === 1);
+		$this->testAddrSig($party);
 
 		# validate_address - valid action, valid address
 		$res = $this->testValidateRequest([
@@ -173,6 +196,24 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		],true);
 		$this->assertTrue(isset($res['data']));
 		$this->assertTrue(strlen($res['data']) > 0);
+	}
+
+	# testValidateAddrRequest, with signature verification under a microscope.
+	function testAddrSig($party = null) {
+		if(!is_object($party)) {
+			$wallet = $this->testWallet();
+			$party = $wallet->getParty();
+		}
+		$req = new request('invite');
+		$req->setHeaders(cog::generate_header(cog::generate_zero_hash(),rand(),$party->getAddress(),false));
+		$req->setParams([
+			'address' => $party->getAddress(),
+			'public_key' => $party->getPublicKey()
+		]);
+		
+		$res = $req->submitLocal();
+		$this->assertTrue(isset($res['result']),"'result' field not found in result array:\n".print_r($res,1)."\nfor request:\n".print_r($req,1));
+		$this->assertTrue($res['result'] == 1,print_r($res,1));
 	}
 	
 	function testSmoke($terms = array()) {
