@@ -1,39 +1,135 @@
 <?php
 class request {
-	protected $id;
-	protected $action;
-	
+	protected $headers = [];
+	protected $action = null;
+	protected $params = [];
+
+	protected $server = null;
+	protected $port = null;
+
+	protected $nodes = [];
+
+	public function setNodes($nodes) {
+		$this->nodes = $nodes;
+	}
 	public function setAction($action) {
 		$this->action = $action;
 	}
 	public function getAction() {
 		return $this->action;
-	}
-
-	public function setId($x) {
-		$this->id = $x;
-	}
-	public function getId() {
-		return $this->id;
-	}
-	public function generateId() {
-		$id = bin2hex(random_bytes(32)); #64
-		$this->setId($id);
-	}
-	
+	}	
 	public function __construct($action) {
-		$this->generateId();
 		$this->setAction($action);
 	}
 	
 	public function toArray() {
-		return [
-			'id' => $this->getId(),
+		$ar = [
+			'headers' => $this->getHeaders(),
 			'action' => $this->getAction(),
+			'params' => $this->getParams(),
 		];
+		if(empty($ar['headers'])) {
+			unset($ar['headers']);
+		}
+		return $ar;
 	}
 	public function toString() {
-		return json_encode($this->toArray(),JSON_PRETTY_PRINT);
+		return json_encode($this->toArray());
+	}
+	public function getParams() {
+		if(empty($this->params)) return [1];
+		else return $this->params;
+	}
+	public function setParams($data) {
+		$this->params = $data;
+	}
+	public function submitLocal() {
+		return $this->submit("localhost","80");
+	}
+	static function request($server,$port,$params,$return_raw = false) {
+		$scheme = ($port == 443 ? "https" : "http"); # TODO force ssl or something
+
+		$url = "{$scheme}://{$server}/cog/server.php";
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL,$url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($ch, CURLOPT_PORT, $port);
+
+		$res = curl_exec($ch);
+		$info = curl_getinfo($ch);
+		$time = [
+			'total_time' => $info['total_time'],
+			'namelookup_time' => $info['namelookup_time'],
+			'connect_time' => $info['connect_time'],
+			'pretransfer_time' => $info['pretransfer_time'],
+			'starttransfer_time' => $info['starttransfer_time'],
+			'redirect_time' => $info['redirect_time'],
+		];
+		curl_close($ch);
+
+		if($return_raw) {
+			return $res;
+		}
+
+		$assoc = json_decode($res,true);
+		if(!is_array($assoc)) {
+			cog::print("Failed to decode response ({$url}).");
+			cog::print("Request:\n".print_r($params,1));
+			cog::print("Response:\n".$res);
+		}
+		if(!empty($assoc['misc'])) {
+			cog::print($assoc['misc']);
+		}
+		$assoc['time'] = $time;
+		return $assoc;
+	}
+	public function setHeaders($headers) {
+		$this->headers = $headers;
+	}
+	public function getHeaders() {
+		return $this->headers;
+	}
+	public function submit($server = null,$port = null,$use_nodes = false,$return_raw = false) {
+		if(empty($server)) {
+			$server = $this->server;
+		}
+		if(empty($port)) {
+			$port = $this->port;
+		}
+
+		$wallet = cog::get_wallet();
+		if($use_nodes) {
+			$nodes = $wallet->listNodes();
+		} else {
+			if(empty($server)) {
+				throw new Exception("No server was specified.");
+			}
+			if(empty($port)) {
+				throw new Exception("No port was specified.");
+			}
+			$nodes = [['ip_address'=>$server,'ip_port'=>$port]];
+		}
+
+		$params = $this->toArray();
+		$params['environment'] = $wallet->getEnvironment();
+		$sig = $wallet->sign($params);
+		$params['signature'] = $sig;
+
+		foreach($nodes as $node) {
+			$server = $node['ip_address'];
+			$port = $node['ip_port'];
+			$res = self::request($server,$port,$params,$return_raw);
+			if(is_array($res) && !$return_raw) {
+				return $res;
+			} elseif (is_object(json_decode($res)) && $return_raw) {
+				return $res;
+			}
+		}
+		// bad bad not good
 	}
 }
 
