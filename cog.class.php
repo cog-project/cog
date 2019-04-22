@@ -1,10 +1,12 @@
 <?php
 class cog {
 	static $version = '0.0.2';
+	static $wallet = null;
+	static $environment = 'cog';
 
 	static function hash($x) {
 		if(is_array($x)) {
-			$x = json_encode($x,JSON_PRETTY_PRINT);
+			$x = json_encode($x);
 		}
 		return hash("sha256",$x);
 	}
@@ -37,10 +39,20 @@ class cog {
 		}
 	}
 
-	static function generate_addr($pub) {
-		preg_match('~^-----BEGIN ([A-Z ]+)-----\s*?([A-Za-z0-9+=/\r\n]+)\s*?-----END \1-----\s*$~D', $pub, $matches);
+	static function get_binary_key($key) {
+		preg_match('~^-----BEGIN ([A-Z ]+)-----\s*?([A-Za-z0-9+=/\r\n]+)\s*?-----END \1-----\s*$~D', $key, $matches);
 		$strip = trim($matches[2]);
 		$raw = base64_decode($strip);
+		return $raw;
+	}
+
+	static function simplify_key($key) {
+		$raw = self::get_binary_key($key);
+		$simple = base64_encode($raw);
+		return $simple;
+	}
+	static function generate_addr($pub) {
+		$raw = self::get_binary_key($pub);
 		$addr = cog::hash($raw);
 		return $addr;
 	}
@@ -72,10 +84,10 @@ class cog {
 	}
 
 	static function encrypt($pub,$data) {
-		if (openssl_public_encrypt($data, $encrypted, $pub)) {
+		if ($res = openssl_public_encrypt($data, $encrypted, $pub)) {
 			$data = base64_encode($encrypted);
 		} else {
-			throw new Exception('Unable to encrypt data. Perhaps it is bigger than the key size?');
+			throw new Exception("Unable to encrypt data. Perhaps it is bigger than the key size?");
 		}
 		return $data;
 	}
@@ -96,7 +108,7 @@ class cog {
 	}
 
 	static function verify_signature($data,$signature,$public_key) {
-		return openssl_verify($data,base64_decode($signature),$public_key);
+		return openssl_verify($data,base64_decode($signature),$public_key,OPENSSL_ALGO_SHA1);
 	}
 
 	static function get_timestamp() {
@@ -105,6 +117,18 @@ class cog {
 
 	static function print($x) {
 		echo '<pre>'.print_r($x,1).'</pre>';
+	}
+
+	static function set_wallet($x) {
+		self::$wallet = $x;
+	}
+
+	static function get_wallet() {
+		if(!is_object(self::$wallet)) {
+			throw new Exception('No wallet object found');
+		} else {
+			return self::$wallet;
+		}
 	}
 }
 ?>
