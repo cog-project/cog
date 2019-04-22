@@ -55,12 +55,13 @@ class party {
 		if(is_object($contract)) {
 			$contract = $contract->toString(false);
 		} elseif (is_array($contract)) {
-			$contract = json_encode($contract,JSON_PRETTY_PRINT);
+			$contract = json_encode($contract);
 		}
-		return cog::sign(
+		$res = cog::sign(
 			$this->priv,
 			$contract
 		);
+		return $res;
 	}
 }
 ?>
