@@ -59,10 +59,12 @@ trait contractTests {
 	}
 
 	public function verifyInvite($invite) {
+		$this->markTestSkipped(); # old
 		$this->verifyRequest($invite,"invite");
 	}
 
 	public function testRequest($action = 'invite',$params = null) {
+		$this->markTestSkipped(); # old
 		$this->assertTrue(class_exists('request'));
 		$request = new request($action);
 		$this->verifyRequest($request,$action);
