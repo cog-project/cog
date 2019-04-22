@@ -38,12 +38,19 @@ class node {
 		}
 		$signature = $params['signature'];
 		unset($params['signature']);
-		if(!cog::verify_signature(json_encode($params,JSON_PRETTY_PRINT),$signature,$params['params']['public_key'])) {
-			throw new Exception("Failed to validate signature.\n".json_encode($params,JSON_PRETTY_PRINT));
+		if(!cog::verify_signature(json_encode($params),$signature,$params['params']['public_key'])) {
+			throw new Exception("Failed to validate signature.\n".json_encode($params));
 		}
 	}
 	public function validateRequest($params) {
 		$data = null;
+		if(empty($params['environment'])) {
+			throw new Exception('No environment was specified.');
+		} else {
+			$environment = $params['environment'];
+			# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
+			$this->network->setDb($environment);
+		}
 		if(empty($params)) {
 			throw new Exception("No information was provided in the request.");
 		}
@@ -186,7 +193,7 @@ class node {
 			$out['misc'] = $GLOBALS['misc'];
 		}
 		
-		$json = json_encode($out,JSON_PRETTY_PRINT);
+		$json = json_encode($out);
 		
 		echo $json;
 	}
