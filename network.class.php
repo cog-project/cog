@@ -18,6 +18,10 @@ class network {
 		return $this->db;
 	}
 
+	public function setDb($x) {
+		$this->db = $x;
+	}
+
 	public function getCollection() {
 		return $this->collection;
 	}
