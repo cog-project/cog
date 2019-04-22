@@ -8,15 +8,13 @@ class wallet {
 		if(file_exists($path)) {
 			$this->party = unserialize(file_get_contents($path));
 		}
+		cog::set_wallet($this);
 	}
 
 	public function getConfig() {
-		$data = $this->localRequest([
-			'action' => 'get_config',
-			'params' => [
-				'address' => $this->getAddress()
-			]
-		]);
+		$req = new request('get_config');
+		$req->setParams(['address' => $this->getAddress()]);
+		$data = $req->submitLocal();
 		return $data['data'];
 	}
 
@@ -43,29 +41,19 @@ class wallet {
 	}
 
 	public function getNumAddresses() {
-		$res = $this->nodeRequest([
-			'action' => 'address_count',
-			'params' => []
-		]);
+		$req = new request('address_count');
+		$res = $req->submit(null,null,true);
 	}
 
 	public function getNumBlocks() {
-		$res = $this->nodeRequest([
-			'action' => 'blocks_count',
-			'params' => []
-		]);
-	}
-
-	public function localRequest($params = []) {
-		return $this->nodeRequest($params);
+		$req = new request('blocks_count');
+		$res = $req->submit(null,null,true);
 	}
 
 	public function addNode($data) {
-		$res = $this->request([
-			'action' => 'add_node',
-			'params' => $data
-		],'localhost',80);
-
+		$req = new request('add_node');
+		$req->setParams($data);
+		$res = $req->submitLocal();
 		return $res;
 	}
 
@@ -74,10 +62,8 @@ class wallet {
 		$this->addNode($data);
 
 		// condense db to endpoints and retrieve current
-		$response = $this->localRequest([
-			'action' => 'get_endpoints',
-			'params' => [1]
-		]);
+		$req = new request('get_endpoints');
+		$response = $req->submitLocal();
 
 		$local_endpoints = $response['data'];
 
@@ -86,11 +72,7 @@ class wallet {
 		$ip = $data['ip_address'];
 		$port = $data['ip_port'];
 
-		$request = [
-			'action' => 'get_endpoints',
-			'params' => [1],
-		];
-		$response = $this->request($request,$ip,$port);
+		$response = $req->req($ip,$port);
 		$remote_endpoints = $response['data'];
 
 		// convert remote endpoints to hashes
@@ -116,52 +98,44 @@ class wallet {
 
 		if(!empty($remote_endpoint_hashes)) {
 			// request histories of new endpoints, stop at local endpoints
-			$response = $this->request([
-				'action' => 'get_hash_history',
-				'params' => [
-					'endpoints' => $remote_endpoint_hashes,
-					'startpoints' => $local_endpoint_hashes,
-				]
-			],$ip,$port);
+			$req = new request('get_hash_history');
+			$req->setParams([
+				'endpoints' => $remote_endpoint_hashes,
+				'startpoints' => $local_endpoint_hashes,
+			]);
+			$response = $req->submit($ip,$port);
 
 			// validate and store transactions, and update endpoints
-			$res = $this->localRequest([
-				'action' => 'insert_transactions',
-				'params' => ['data' => $response['data']]
-			]);
+			$req = new request('insert_transactions');
+			$req->setParams(['data' => $response['data']]);
+			$res = $req->submitLocal();
 		}
 	}
 
 	public function removeNode($data) {
-		$res = $this->request([
-			'action' => 'remove_node',
-			'params' => $data
-		],'localhost',80);
-
+		$req = new request('remove_node');
+		$req->setParams($data);
+		$res = $req->submitLocal();
 		return $res;
 	}
 
 	public function config($data) {
-		$res = $this->localRequest([
-			'action' => 'config',
-			'params' => $data
-		]);
+		$req = new request('config');
+		$req->setParams($data);
+		$res = $req->submitLocal();
 		return $res;
 	}
 
 	public function listNodes() {
-		$res = $this->request([
-			'action' => 'list_nodes',
-			'params' => [1]
-		],'localhost',80);
+		$req = new request('list_nodes');
+		$res = $req->submit('localhost',80);
 		return $res['data'];
 	}
 
 	public function requestPeers($data) {
-		$res = $this->request([
-			'action' => 'list_nodes',
-			'params' => [1]
-		],$data['ip_address'],$data['ip_port']);
+		$req = new request('list_nodes');
+		$res = $req->submit($data['ip_address'],$data['ip_port']);
+		
 		$data = $res['data'];
 
 		$existing = $this->listNodes();
@@ -189,18 +163,17 @@ class wallet {
 
 		// Generate Request
 
-		$request = [
-			'action' => 'ping',
-			'params' => [
-				'ip_address' => $_SERVER['SERVER_HOST'],
-				'ip_port' => $_SERVER['SERVER_PORT']
-			]
+		$req = new request('ping');
+		
+		$params = [
+			'ip_address' => $_SERVER['SERVER_HOST'],
+			'ip_port' => $_SERVER['SERVER_PORT']
 		];
 
 		// Optionally Pass Local Details
 
 		if(!empty($config)) {
-			$request['params']['remote'] = [
+			$params['remote'] = [
 				'ip_address' => $config['ip_address'],
 				'ip_port' => $config['ip_port'],
 				'address' => $config['address'],
@@ -212,7 +185,8 @@ class wallet {
 
 		// Submit Request
 
-		$res = $this->request($request,$data['ip_address'],$data['ip_port']);
+		$req->setParams($params);
+		$res = $req->submit($data['ip_address'],$data['ip_port']);
 
 		// Response Data
 
@@ -232,60 +206,12 @@ class wallet {
 		$this->addNode($data);
 	}
 
-	public function nodeRequest($params = [], $server = 'localhost', $port = 80) {
-		$nodes = $this->listNodes();
-
-		$params['signature'] = $this->sign($params);
-		$params['environment'] = $this->getEnvironment();
-		$res = $this->request($params,$server, $port);
-		return $res;
-	}
-
-	public function request($params = [], $server, $port) {
-		$scheme = ($port == 443 ? "https" : "http"); # TODO force ssl or something
-
-		$url = "{$scheme}://{$server}/cog/server.php";
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,$url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, false);
-		curl_setopt($ch, CURLOPT_PORT, $port);
-
-		$res = curl_exec($ch);
-		$info = curl_getinfo($ch);
-		$time = [
-			'total_time' => $info['total_time'],
-			'namelookup_time' => $info['namelookup_time'],
-			'connect_time' => $info['connect_time'],
-			'pretransfer_time' => $info['pretransfer_time'],
-			'starttransfer_time' => $info['starttransfer_time'],
-			'redirect_time' => $info['redirect_time'],
-		];
-		curl_close($ch);
-
-		$assoc = json_decode($res,true);
-		if(!is_array($assoc)) {
-			cog::print("Failed to decode response ({$url}).");
-			cog::print("Request:\n".print_r($params,1));
-			cog::print("Response:\n".$res);
-		}
-		if(!empty($assoc['misc'])) {
-			cog::print($assoc['misc']);
-		}
-		$assoc['time'] = $time;
-		return $assoc;
-	}
-
 	public function getIsRegistered() {
-		$res = $this->nodeRequest([
-			'action' => 'validate_address',
-			'params' => [
-				'address' => $this->getAddress()
-			]
+		$req = new request('validate_address');
+		$req->setParams([
+			'address' => $this->getAddress()
 		]);
+		$res = $req->submit(null,null,true);
 		return $res['data'];
 	}
 
@@ -304,16 +230,15 @@ class wallet {
 		}
 
 		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
-		$req = [
-			'headers' => $headers,
-			'action' => 'invite',
-			'params' => [
-				'database' => $database,
-				'address' => $address,
-				'public_key' => $publicKey,
-			]
-		];
-		$res = $this->nodeRequest($req);
+
+		$req = new request('invite');
+		$req->setHeaders($headers);
+		$req->setParams([
+			'database' => $database,
+			'address' => $address,
+			'public_key' => $publicKey,
+		]);
+		$res = $req->request(null,null,true);
 		if(!$res['result']) {
 			cog::print($res['message']); #TODO logging
 		}
@@ -321,7 +246,7 @@ class wallet {
 
 	public function sign($data) {
 		if(!$this->hasParty()) {
-			return;
+			throw new Exception('No party found.');
 		}
 		$sig = $this->party->sign($data);
 		return $sig;
@@ -332,15 +257,13 @@ class wallet {
 			return;
 		}
 		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
-		$req = [
-			'headers' => $headers,
-			'action' => 'view',
-			'params' => [
-				'database' => $database,
-				'hash' => $hash,
-			]
-		];
-		$res = $this->nodeRequest($req);
+		$req = new request('view');
+		$req->setHeaders($headers);
+		$req->setParams([
+			'database' => $database,
+			'hash' => $hash,
+		]);
+		$res = $req->submit(null,null,true);
 		return $res['data'];
 	}
 
@@ -349,18 +272,18 @@ class wallet {
 			return;
 		}
 		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
-		
-		$req = [
-			'headers' => $headers,
-			'action' => 'summary',
-			'params' => [
-				'database' => $database,
-				'address' => $address,
-				'public_key' => $publicKey
-			]
-		];
-		$res = $this->nodeRequest($req);
+		$req = new request('summary');
+		$req->setHeaders($headers);
+		$req->setParams([
+			'address' => $this->party->getAddress(),
+			'public_key' => $this->party->getPublicKey()
+		]);
+		$res = $req->submit(null,null,true);
 		return $res['data'];
+	}
+
+	public function getParty() {
+		return $this->party;
 	}
 }
 ?>
