@@ -92,23 +92,34 @@ class cog {
 		return $data;
 	}
 
+	public static $sig_algo = OPENSSL_ALGO_RMD160; # OPENSSL_ALGO_SHA1
+
 	static function decrypt($priv,$data) {
 		if (openssl_private_decrypt(base64_decode($data), $decrypted, $priv)) {
 			$data = $decrypted;
 			return $data;
 		} else {
-			throw new Exception('Failed to decrypt data.');
+			throw new Exception('Failed to decrypt data with private key.');
+		}
+	}
+
+	static function decrypt_public($pub,$data) {
+		if (openssl_public_decrypt(base64_decode($data), $decrypted, $pub)) {
+			$data = $decrypted;
+			return $data;
+		} else {
+			throw new Exception('Failed to decrypt data with public key.');
 		}
 	}
 
 	static function sign($priv,$data) {
-		openssl_sign($data, $binary_signature, $priv, OPENSSL_ALGO_SHA1);
+		openssl_sign($data, $binary_signature, $priv, self::$sig_algo);
 		$sig = base64_encode($binary_signature);
 		return $sig;
 	}
 
 	static function verify_signature($data,$signature,$public_key) {
-		return openssl_verify($data,base64_decode($signature),$public_key,OPENSSL_ALGO_SHA1);
+		return openssl_verify($data,base64_decode($signature),$public_key,self::$sig_algo);
 	}
 
 	static function get_timestamp() {
@@ -129,6 +140,10 @@ class cog {
 		} else {
 			return self::$wallet;
 		}
+	}
+
+	static function check_hash_format($str) {
+		return preg_match("/^[a-f0-9]{64}$/",$str);
 	}
 }
 ?>
