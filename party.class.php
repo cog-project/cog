@@ -45,6 +45,10 @@ class party {
 		return cog::decrypt($this->priv,$data);
 	}
 
+	public function decrypt_public($data) {
+		return cog::decrypt_public($this->pub,$data);
+	}
+
 	public function buildContract($terms = null,$nonce = null) {
 		$out = new contract($terms,$nonce);
 		$out->setCreator($this->getAddress());

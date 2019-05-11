@@ -10,6 +10,16 @@ class network {
 	private $db = null;
 	private $collection = null;
 
+	static $instance = null;
+
+	public static function getInstance() {
+		return self::$instance;
+	}
+
+	public static function setInstance($x) {
+		self::$instance = $x;
+	}
+
 	public static function getZeroHash() {
 		return cog::generate_zero_hash();
 	}
@@ -39,6 +49,7 @@ class network {
 	public function __construct() {
 		// We should be able to configure this later.
 		$this->dbClient = new dbClient();
+		self::setInstance($this);
 	}
 
 	# obsolete?
@@ -342,13 +353,13 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 		return true;
 	}
 
-	public function put($data) {
+	public function put($data,$return_hash = false) {
 		$insert = [
 			'hash' => cog::hash($data),
 			'request' => $data,
 		];
 		$res = $this->dbClient->dbInsert("{$this->db}.{$this->collection}",$insert);
-		return $res;
+		return ($return_hash) ? cog::hash($data) : $res;
 	}
 
 	public function setConfig($data) {
@@ -422,7 +433,8 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 	}
 	
 	public function length() {
-		return $this->dbClient->getCount("{$this->db}","{$this->collection}");
+		$res = $this->dbClient->getCount("{$this->db}","{$this->collection}");
+		return $res;
 	}
 
 	public function getMessagesByAddress($address) {

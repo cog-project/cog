@@ -3,19 +3,28 @@ class node {
 	private $network;
 	private $party;
 	
-	public function __construct($network = null) {
+	public function __construct($network = null,$new = false) {
 		if(!is_object($network)) {
 			$this->network = new network();
 		} else {
 			$this->network = $network;
 		}
-		$this->wallet = new wallet(); #TODO - account for lack of a party
+		$this->wallet = new wallet($new); #TODO - account for lack of a party
+	}
+	public function getWallet() {
+		return $this->wallet;
+	}
+	public function setWallet($x) {
+		$this->wallet = $x;
+	}
+	public function getNetwork() {
+		return $this->network;
 	}
 	public function validateHash($params,$key = 'hash') {
 		if(!isset($params['params'][$key])) {
 			throw new Exception("No hash was specified.");
 		}
-		if(!preg_match("/^[a-f0-9]{64}$/",$params['params'][$key])) {
+		if(!cog::check_hash_format($params['params'][$key])) {
 			throw new Exception("A malformed hash was provided.");
 		}
 	}
@@ -23,7 +32,7 @@ class node {
 		if(!isset($params['params'][$address_key])) {
 			throw new Exception("No address was specified.");
 		}
-		if(!preg_match("/^[a-f0-9]{64}$/",$params['params'][$address_key])) {
+		if(!cog::check_hash_format($params['params'][$address_key])) {
 			throw new Exception("A malformed address was provided.");
 		}
 	}
@@ -42,24 +51,12 @@ class node {
 			throw new Exception("Failed to validate signature.\n".json_encode($params));
 		}
 	}
-	public function validateRequest($params) {
+	public function processAction($params) {
 		$data = null;
-		if(empty($params['environment'])) {
-			throw new Exception('No environment was specified.');
-		} else {
-			$environment = $params['environment'];
-			# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
-			$this->network->setDb($environment);
-		}
-		if(empty($params)) {
-			throw new Exception("No information was provided in the request.");
-		}
-		if(empty($params['action'])) {
-			throw new Exception('No action was specified.');
-		}
-		if(empty($params['params'])) {
-			throw new Exception("No params were specified.");
-		}
+				
+		# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
+		$this->network->setDb($params['environment']);
+		
 		switch($params['action']) {
 			case 'validate_address':
 				$this->validateAddress($params);
@@ -106,15 +103,27 @@ class node {
 				// TODO validate params
 				// TODO no redundancies
 				$data = $params['params'];
-				if(empty($data['ip_address']) || empty($data['ip_port'])) {
-					throw new Exception('An invalid address or port was provided.');
+				$data['ip_port'] = (int) $data['ip_port'];
+				if(empty($data['ip_address'])) {
+					throw new Exception("add_node: An invalid address was provided. ({$data['ip_address']})");
+				}
+				if(empty($data['ip_port'])) {
+					throw new Exception("add_node: An invalid port was provided. ({$data['ip_port']})");
 				}
 				$data = $this->network->addNode($data);
 				break;
 			case 'remove_node':
 				// TODO validate params
 				// TODO no redundancies
-				$data = $this->network->removeNode($params['params']);
+				$data = $params['params'];
+				$data['ip_port'] = (int) $data['ip_port'];
+				if(empty($data['ip_address'])) {
+					throw new Exception("remove_node: An invalid address was provided. ({$data['ip_address']})");
+				}
+				if(empty($data['ip_port'])) {
+					throw new Exception("remove_node: An invalid port was provided. ({$data['ip_port']})");
+				}
+				$data = $this->network->removeNode($data);
 				break;
 			case 'ping':
 				$data = [
@@ -177,7 +186,12 @@ class node {
 		];
 
 		try {
-			$data = $this->validateRequest($params);
+			$rv = new requestValidator($params);
+			$result = $rv->validate();
+			if(!$result) {
+				throw new Exception($rv->getMessage());
+			}
+			$data = $this->processAction($params);
 			$out['message'] = 'OK';
 			if($data !== null) {
 				$out['data'] = $data;

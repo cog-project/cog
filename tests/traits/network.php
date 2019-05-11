@@ -1,6 +1,6 @@
 <?php
 trait networkTests {
-	function testListNodes() {
+	function testNetworkListNodes() {
 		$network = $this->testNetwork();
 		$network->addNode([
 			'ip_address' => '127.0.0.1',

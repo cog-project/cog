@@ -3,9 +3,9 @@ class wallet {
 	private $party;
 	private $environment = 'cog';
 	
-	public function __construct() {
+	public function __construct($new = false) {
 		$path = dirname(__FILE__).'/client_data/wallet.dat';
-		if(file_exists($path)) {
+		if(file_exists($path) && !$new) {
 			$this->party = unserialize(file_get_contents($path));
 		}
 		cog::set_wallet($this);
@@ -15,7 +15,12 @@ class wallet {
 		$req = new request('get_config');
 		$req->setParams(['address' => $this->getAddress()]);
 		$data = $req->submitLocal();
-		return $data['data'];
+		# TODO account for lack of data after all requests
+		if(isset($data['data'])) {
+			return $data['data'];
+		} else {
+			return [];
+		}
 	}
 
 	public static function init() {
@@ -30,6 +35,10 @@ class wallet {
 		$p = new party();
 		file_put_contents(dirname(__FILE__).'/client_data/wallet.dat',serialize($p));
 		$this->party = $p;
+	}
+
+	public function setParty($party) {
+		$this->party = $party;
 	}
 
 	public function getAddress() {
@@ -72,7 +81,7 @@ class wallet {
 		$ip = $data['ip_address'];
 		$port = $data['ip_port'];
 
-		$response = $req->req($ip,$port);
+		$response = $req->submit($ip,$port);
 		$remote_endpoints = $response['data'];
 
 		// convert remote endpoints to hashes
@@ -166,8 +175,8 @@ class wallet {
 		$req = new request('ping');
 		
 		$params = [
-			'ip_address' => $_SERVER['SERVER_HOST'],
-			'ip_port' => $_SERVER['SERVER_PORT']
+			'ip_address' => @$_SERVER['SERVER_HOST'] ? : 'localhost',
+			'ip_port' => @$_SERVER['SERVER_PORT'] ? : '80',
 		];
 
 		// Optionally Pass Local Details
@@ -256,11 +265,11 @@ class wallet {
 		if(!$this->hasParty()) {
 			return;
 		}
-		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
+		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$this->getAddress(),false);
 		$req = new request('view');
 		$req->setHeaders($headers);
 		$req->setParams([
-			'database' => $database,
+			'database' => $this->getEnvironment(),
 			'hash' => $hash,
 		]);
 		$res = $req->submit(null,null,true);

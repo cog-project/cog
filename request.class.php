@@ -9,6 +9,8 @@ class request {
 
 	protected $nodes = [];
 
+	protected $resultArray = [];
+
 	public function setNodes($nodes) {
 		$this->nodes = $nodes;
 	}
@@ -57,7 +59,7 @@ class request {
 		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, false);
-		curl_setopt($ch, CURLOPT_PORT, $port);
+		curl_setopt($ch, CURLOPT_PORT, (int)$port);
 
 		$res = curl_exec($ch);
 		$info = curl_getinfo($ch);
@@ -91,7 +93,16 @@ class request {
 		$this->headers = $headers;
 	}
 	public function getHeaders() {
-		return $this->headers;
+		if(!empty($this->headers)) {
+			return $this->headers;
+		} else {
+			return cog::generate_header(
+				cog::generate_zero_hash(),
+				null,
+				cog::get_wallet()->getAddress(),
+				false
+			);
+		}
 	}
 	public function submit($server = null,$port = null,$use_nodes = false,$return_raw = false) {
 		if(empty($server)) {
@@ -115,7 +126,7 @@ class request {
 		}
 
 		$params = $this->toArray();
-		$params['environment'] = $wallet->getEnvironment();
+		$params['environment'] = network::getInstance()->getDb();
 		$sig = $wallet->sign($params);
 		$params['signature'] = $sig;
 

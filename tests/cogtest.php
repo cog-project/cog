@@ -8,6 +8,8 @@ require 'traits/network.php';
 require 'traits/party.php';
 require 'traits/contract.php';
 require 'traits/mongo.php';
+require 'traits/wallet.php';
+require 'traits/node.php';
 require 'functions.php';
 
 require 'phpunit/vendor/autoload.php';
@@ -32,17 +34,23 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	use partyTests;
 	use contractTests;
 	use miningTests;
+	use walletTests;
+	use nodeTests;
 	
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
 
 	function setUp() {	
+		$this->testNetwork();
+		
 		emit("Running CogTest::{$this->getName()}");
 		// Initialize Collection
 		$this->initialize_collection();
 	}
 
 	function tearDown() {
+		network::setInstance(null);
+		
 		// Delete Collection
 		$this->delete_collection();
 	}
@@ -50,38 +58,52 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	function initialize_collection() {
 		emit("Initializing db collection",true);
 		$this->testMongoCreateCollection("cogTest","blocks");
-		$this->testMongoDropCollection("cogTest","nodes");
+		$this->testMongoCreateCollection("cogTest","nodes");
+		$this->testMongoCreateCollection("cogTest","config");
+		$this->testMongoCreateCollection("cogTest","endpoints");
 	}
 
 	function delete_collection() {
 		emit("Deleting db collection",true);
 		$this->testMongoDropCollection("cogTest","blocks");
 		$this->testMongoDropCollection("cogTest","nodes");
+		$this->testMongoDropCollection("cogTest","config");
+		$this->testMongoDropCollection("cogTest","endpoints");
+	}
+/*
+	function key2dec($key) {
+		$raw = key::get_binary_key($key);
 	}
 
-	function testInitialize($params = array()) {
-		$out = [];
-		foreach($params as $i => &$v) {
-			$name_type = explode(":",$i);
-			$name = $name_type[0];
-			$type = $name_type[1];
-			if(empty($v)) {
-				$f = "test".ucfirst($type);
-				$out[$name] = $this->$f();
-			} else {
-				$out[$name] = $v;
-			}
-			unset($params[$i]);
-		}
-		return $out;
+	function bin2dec($bin) {
+		$split = str_split($bin);
+		$ord = array_map('ord',$split);
+		$b2 = array_map(function($x) { return sprintf('%08d',base_convert($x,10,2));},$ord);
+		$b2s = implode('',$b2);
+		$b10 = base_convert($b2s,2,10);
+		return $b10;
+	}
+	function str2dec($str) {
+		$bin = hex2bin($str);
+		$b10 = $this->bin2dec($bin);
+		return $b10;
 	}
 
-	function testWallet() {
-		$this->assertTrue(class_exists('wallet'));
-		$wallet = new wallet();
-		$wallet->setEnvironment('cogTest');
-		return $wallet;
+	function testCert() {
+		$party = $this->testParty();
+		$pub = $party->getPublicKey();
+		$priv = $party->getPrivateKey();
+
+		$bin = cog::get_binary_key($priv);
+		$pk = $this->bin2dec($bin);
+
+		emit($pk);
+
+		$f1 = function($r,$n) { return pow($r,2) % $n; };
+
+		$f2 = function($r,$s,$c,$n) { return $r*pow($s,$c) % $n; };
 	}
+*/
 
 	function nodeRequest($params = []) {
 		$req = new request(null);
