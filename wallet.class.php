@@ -291,8 +291,41 @@ class wallet {
 		return $res['data'];
 	}
 
+	public function getCreditInfo($env,$address) {
+		if(!$this->hasParty()) {
+			return;
+		}
+		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
+		$req = new request('credit_info');
+		$req->setHeaders($headers);
+		$req->setParams([
+			'address' => $this->party->getAddress(),
+			'public_key' => $this->party->getPublicKey()
+		]);
+		$res = $req->submitLocal();
+		return $res['data'] ? : [];
+	}
+
 	public function getParty() {
 		return $this->party;
+	}
+
+	public function send($data) {
+		$req = new request('send');
+		$inputs = [
+			'from' => (string)$data['from'],
+			'to' => (string)$data['to'],
+			'amount' => (float)$data['amount'],
+			'message' => (string)$data['message'],
+		];
+		$req->setParams(['inputs' => [$inputs]]);
+		// 1. validate.
+		if($data['from'] != $this->getAddress()) {
+		}
+		// 2. broadcast
+		$res = $req->broadcast();
+		// 3. process response.
+		cog::print($res);
 	}
 }
 ?>
