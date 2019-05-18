@@ -57,6 +57,29 @@ class network {
 		$this->publicKeys[$party->getAddress()] = $party->getPublicKey();
 	}
 
+	public function getCreditInfo($address) {
+		$this->updateEndpoints();
+		$res = $this->dbClient->queryByKey(
+		"{$this->db}.endpoints",
+		['$and' => [
+			# Always a Send Action
+			['request.action' => 'send'],
+			# Address mentioned as either a sender or receiver.
+			['request.params.inputs' =>
+				['$elemMatch' =>
+					['$or' => [
+							['from' => $address],
+							['to' => $address]
+						]
+					]
+				]
+			]
+		]]
+		);
+		$out = $res;
+		return $out;
+	}
+	
 	public function getSummary($address) {
 		$res = $this->dbClient->queryByKey(
 			"{$this->db}.{$this->collection}",
