@@ -7,6 +7,7 @@
 -->
   <?php renderElement('user_info',['client' => $client]); ?>
   <?php renderElement('network_info',['client' => $client]); ?>
+  <?php renderElement('credit_info',['client' => $client, 'creditInfo' => $creditInfo]); ?>
 
   <div class='details'>
   <?php if(!$isRegistered) {
