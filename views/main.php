@@ -31,6 +31,9 @@ if(!empty($_POST)) {
 	if(isset($_POST['request_peers'])) {
 		$client->requestPeers($_POST['request_peers']);
 	}
+	if(isset($_POST['send'])) {
+		$client->send($_POST['send']);
+	}
 }
 
 if($client->hasParty()) {
@@ -39,10 +42,15 @@ if($client->hasParty()) {
 		$client->getEnvironment(),
 		$client->getAddress()
 	) ? : [];
+	$creditInfo = $client->getCreditInfo(
+		$client->getEnvironment(),
+		$client->getAddress()
+	);
 	renderElement('home',[
 		'client' => $client,
 		'isRegistered' => $isRegistered,
 		'summary' => $summary,
+		'creditInfo' => $creditInfo,
 	]);
 	
 } else {
