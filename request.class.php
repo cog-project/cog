@@ -104,6 +104,24 @@ class request {
 			);
 		}
 	}
+	public function broadcast() {
+		$wallet = cog::get_wallet();
+		$nodes = $wallet->listNodes();
+		
+		$params = $this->toArray();
+		$params['environment'] = network::getInstance()->getDb();
+		$sig = $wallet->sign($params);
+		$params['signature'] = $sig;
+
+		$results = [];
+		foreach($nodes as $node) {
+			$server = $node['ip_address'];
+			$port = $node['ip_port'];
+			$res = self::request($server,$port,$params,$return_raw);
+			$results["{$server}:{$port}"] = $res;
+		}
+		return $results;
+	}
 	public function submit($server = null,$port = null,$use_nodes = false,$return_raw = false) {
 		if(empty($server)) {
 			$server = $this->server;
