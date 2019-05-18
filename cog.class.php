@@ -1,6 +1,6 @@
 <?php
 class cog {
-	static $version = '0.0.2';
+	static $version = '0.0.3';
 	static $wallet = null;
 	static $environment = 'cog';
 
