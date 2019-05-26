@@ -8,7 +8,23 @@ include 'client_functions.php';
 
 shell_exec("git fetch github");
 
-###
+### TODO find pernanent location for environment default ###
+
+$network = new network();
+if( ($_SERVER['HTTP_HOST'] == '127.0.0.1' || $_SERVER['HTTP_HOST'] == 'localhost')
+    && isset($_REQUEST['environment'])
+  ) {
+	$environment = $_REQUEST['environment'];
+# TODO do something with this
+#	unset($_REQUEST['environment']);
+} else {
+	$environment = 'cog';
+}
+
+$network->init([
+	'db' => $environment,
+	'collection' => 'blocks'
+]);
 
 $client = wallet::init();
 loadView('main',[
