@@ -1,5 +1,5 @@
 <?php
-#set_time_limit(5);
+set_time_limit(5);
 require dirname(__FILE__).'/block.class.php';
 require dirname(__FILE__).'/cog.class.php';
 require dirname(__FILE__).'/contract.class.php';
@@ -12,4 +12,5 @@ require dirname(__FILE__).'/party.class.php';
 require dirname(__FILE__).'/network.class.php';
 require dirname(__FILE__).'/mongointerface.class.php';
 require dirname(__FILE__).'/request_validator.class.php';
+require dirname(__FILE__).'/lib/curl-emulator/curlemu.php';
 ?>
