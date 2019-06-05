@@ -234,7 +234,7 @@ class wallet {
 
 	public function register($database,$address,$publicKey) {
 		if(!$this->hasParty()) {
-			cog::print("There is no party associated with this client."); #TODO logging
+			cog::emit("There is no party associated with this client."); #TODO logging
 			return;
 		}
 
@@ -249,7 +249,7 @@ class wallet {
 		]);
 		$res = $req->request(null,null,true);
 		if(!$res['result']) {
-			cog::print($res['message']); #TODO logging
+			cog::emit($res['message']); #TODO logging
 		}
 	}
 
@@ -325,7 +325,7 @@ class wallet {
 		// 2. broadcast
 		$res = $req->broadcast();
 		// 3. process response.
-		cog::print($res);
+		cog::emit($res);
 	}
 }
 ?>

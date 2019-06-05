@@ -126,7 +126,7 @@ class cog {
 		return gmdate('Y-m-d H:i:s\Z');
 	}
 
-	static function print($x) {
+	static function emit($x) {
 		echo '<pre>'.print_r($x,1).'</pre>';
 	}
 

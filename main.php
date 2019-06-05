@@ -13,4 +13,20 @@ require dirname(__FILE__).'/network.class.php';
 require dirname(__FILE__).'/mongointerface.class.php';
 require dirname(__FILE__).'/request_validator.class.php';
 require dirname(__FILE__).'/lib/curl-emulator/curlemu.php';
+
+#require dirname(__FILE__).'/lib/';
+
+$reqExt = [
+#  'curl'
+];
+
+$success = true;
+cog::emit(get_loaded_extensions());
+foreach($reqExt as $ext) {
+  if(!extension_loaded($ext)) {
+    $success = false;
+    cog::emit("PHP extension not installed: {$ext}");
+  }
+}
+if(!$success) die;
 ?>

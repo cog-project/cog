@@ -79,12 +79,12 @@ class request {
 
 		$assoc = json_decode($res,true);
 		if(!is_array($assoc)) {
-			cog::print("Failed to decode response ({$url}).");
-			cog::print("Request:\n".print_r($params,1));
-			cog::print("Response:\n".$res);
+			cog::emit("Failed to decode response ({$url}).");
+			cog::emit("Request:\n".print_r($params,1));
+			cog::emit("Response:\n".$res);
 		}
 		if(!empty($assoc['misc'])) {
-			cog::print($assoc['misc']);
+			cog::emit($assoc['misc']);
 		}
 		$assoc['time'] = $time;
 		return $assoc;
