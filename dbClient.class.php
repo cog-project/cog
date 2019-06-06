@@ -56,7 +56,11 @@ class dbClient {
 	}
 	public function showCollections($db) {
 		$res = $this->dbCommand($db,["listCollections"=>1]);
-		$out = array_map(function($x) { return $x['name']; },$res);
+		if(is_array($res)) {
+			$out = array_map(function($x) { return $x['name']; },$res);
+		} else {
+			$out = []; # may want to throw an exception depending on the nature of null res
+		}
 		return $out;
 	}
 
