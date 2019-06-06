@@ -153,11 +153,13 @@ trait walletTests {
 			'ip_port' => $port
 		]);
 		$nodes = $this->testListNodes();
+		$this->assertTrue(count($nodes) > 0, 'No nodes were found.');
+		
 		foreach($nodes as $node) {
 			if($node['ip_address'] == $ip && $node['ip_port'] == $port) break;
 		}
-		$this->assertTrue(is_array($node));
-		$this->assertTrue(count($node) > 0);
+		$this->assertTrue(is_array($node),'Node found does not match ping credentials.');
+		$this->assertTrue(count($node) > 0,'There was an error with the node data returned.');
 	}
 
 	function testGetIsRegistered() {
