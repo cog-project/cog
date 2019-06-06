@@ -154,7 +154,10 @@ class wallet {
 		}
 
 		foreach($data as &$peer) {
-			if($peer['ip_address'] == '127.0.0.1' || $peer['ip_address'] == 'localhost' || isset($exclude["{$peer['ip_address']}:{$peer['ip_port']}:{$peer['address']}"])) {
+			if($peer['ip_address'] == '127.0.0.1'
+			|| $peer['ip_address'] == 'localhost'
+			|| isset($exclude["{$peer['ip_address']}:{$peer['ip_port']}:{$peer['address']}"])
+			) {
 				continue;
 			}
 			unset($peer['_id']);
@@ -247,7 +250,14 @@ class wallet {
 			'address' => $address,
 			'public_key' => $publicKey,
 		]);
-		$res = $req->request(null,null,true);
+		
+		$res = $req->submitLocal();
+
+		/* TODO:
+		- make this known to the network, or better, just stop doing it altogether.
+		-- in which case this entire part of the functionality should be eliminated.
+		*/
+		
 		if(!$res['result']) {
 			cog::emit($res['message']); #TODO logging
 		}
