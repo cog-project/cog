@@ -441,7 +441,8 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 					'limit' => 1,
 				]
 			);
-			if(count($res)) {
+			# TODO get rid of this function
+			if(is_array($res) && count($res)) {
 				$latest = array_pop($res);
 				$this->lastHash = $latest['hash'];
 			} else {
