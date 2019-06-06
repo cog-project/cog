@@ -6,7 +6,7 @@ Exploring the application of cryptography to mutual credit, and alternative appr
 
 ### Recommended Requirements:
 
-* PHP 7.0 (mongodb, composer, pear/pecl, xml, mbstring, zip, imap, curl)
+* PHP 7.0 (mongodb, composer, pear/pecl, xml, mbstring, zip, imap, curl, dom)
 * Apache Web Server
 * MongoDB 3.0.0, MongoDB Server
 
