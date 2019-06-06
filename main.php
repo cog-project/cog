@@ -1,5 +1,5 @@
 <?php
-set_time_limit(5);
+#set_time_limit(5);
 require dirname(__FILE__).'/block.class.php';
 require dirname(__FILE__).'/cog.class.php';
 require dirname(__FILE__).'/contract.class.php';
@@ -21,7 +21,7 @@ $reqExt = [
 ];
 
 $success = true;
-cog::emit(get_loaded_extensions());
+
 foreach($reqExt as $ext) {
   if(!extension_loaded($ext)) {
     $success = false;
