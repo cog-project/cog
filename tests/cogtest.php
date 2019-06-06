@@ -151,7 +151,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	}
 
 	function testSignature() {
-		$wallet = new wallet();
+		$wallet = $this->testWallet();
 		$req = ['pkey'=>$wallet->getPublicKey()];
 		$sig1 = $wallet->sign(json_encode($req));
 
@@ -239,9 +239,6 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	}
 	
 	function testSmoke($terms = array()) {
-		$req = new request('list_nodes');
-		$res = $req->submit('localhost',0,false,true);
-		emit($res);
 		return;
 
 		// Begin here if we're not debugging and delete everything above, thanks.
