@@ -74,7 +74,7 @@ trait nodeTests {
 		$res = $req->submitLocal();
 		$this->assertTrue(isset($res['data']));
 		$data = $res['data'];
-		$this->assertTrue(count($data));
+		$this->assertTrue(count($data) > 0);
 		return $res;
 	}
 
