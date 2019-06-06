@@ -197,22 +197,22 @@ class wallet {
 		$req->setParams($params);
 		$res = $req->submit($data['ip_address'],$data['ip_port']);
 
-		// Response Data
+		if(isset($res['data'])) {
+			// Response Data
+			$data = $res['data'];
 
-		$data = $res['data'];
+			// Request Time Data
+			$time = $res['time'];
+			$data['request_time'] = $time;
 
-		// Request Time Data
+			// Include Time of Last Request
+			$data['ping_datetime'] = $timestamp;
 
-		$time = $res['time'];
-		$data['request_time'] = $time;
-
-		// Include Time of Last Request
-
-		$data['ping_datetime'] = $timestamp;
-
-		// Store Data		
-
-		$this->addNode($data);
+			// Store Data		
+			$this->addNode($data);
+		} else {
+			// exception / alert
+		}
 	}
 
 	public function getIsRegistered() {
