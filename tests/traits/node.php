@@ -74,7 +74,7 @@ trait nodeTests {
 		$res = $req->submitLocal();
 		$this->assertTrue(isset($res['data']));
 		$data = $res['data'];
-		$this->assertTrue(count($data));
+		$this->assertTrue(count($data),"Empty data field. Result:\n".print_r($res,1));
 		return $res;
 	}
 
