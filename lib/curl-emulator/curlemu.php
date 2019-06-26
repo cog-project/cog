@@ -194,19 +194,18 @@ if (!function_exists('curl_init')) {
             if ($this->getValue(CURLOPT_URL, false))
                 $this->url = $this->getValue(CURLOPT_URL);
 
-
             // SSL settings when set
-//          $parsedUrl = parse_url($this->url);
-//			if($parsedUrl['scheme'] == 'https')
-//			{
-//				$context['https']['ssl'] = array(
-//					'verify_peer' => $this->getValue(CURLOPT_SSL_VERIFYPEER, false)
-//				);
-//			}
+            $parsedUrl = parse_url($this->url);
+            if($parsedUrl['scheme'] == 'https')
+            {
+	      $options['ssl'] = array(
+                'verify_peer' => $this->getValue(CURLOPT_SSL_VERIFYPEER, false),
+		'verify_peer_name' => false
+              );
+            }
 
             $context = stream_context_create($options);
             $this->result = file_get_contents($this->url, false, $context);
-
             $this->responseHeader = $http_response_header;
         }
 
