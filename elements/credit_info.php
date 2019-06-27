@@ -57,7 +57,6 @@ foreach($agg as $input) {
   }
 }
 
-cog::emit($creditSummary);
 # TODO the send form is going to get too wide, please break it into rows
 ?>
   <details <?=$_GET['expand'] == 'credit' ? 'open' : ''?>>
