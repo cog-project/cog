@@ -37,7 +37,6 @@ if(!empty($_POST)) {
 }
 
 if($client->hasParty()) {
-	$isRegistered = $client->getIsRegistered();
 	$summary = $client->getSummary(
 		$client->getEnvironment(),
 		$client->getAddress()
@@ -48,7 +47,6 @@ if($client->hasParty()) {
 	);
 	renderElement('home',[
 		'client' => $client,
-		'isRegistered' => $isRegistered,
 		'summary' => $summary,
 		'creditInfo' => $creditInfo,
 	]);
