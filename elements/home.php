@@ -10,9 +10,7 @@
   <?php renderElement('credit_info',['client' => $client, 'creditInfo' => $creditInfo]); ?>
 
   <div class='details'>
-  <?php if(!$isRegistered) {
-    renderElement('panel_invite',['client'=>$client]);
-  } else {
+  <?php
     if(isset($_GET['view_contract'])) {
       renderElement(
         'view_contract',
@@ -25,6 +23,6 @@
     } else {
       renderElement('panel_main',['summary' => $summary,'client'=>$client]);
     }
-  } ?>
+  ?>
   </div>
 </div>

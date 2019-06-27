@@ -40,7 +40,7 @@
   </tr>
   <tr>
    <td>Database</td>
-   <td><?=$data['request']['params']['database']?></td>
+   <td><?=$data['request']['environment']?></td>
   </tr>
   <tr>
    <td>Address</td>
