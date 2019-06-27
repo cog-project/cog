@@ -8,6 +8,56 @@ $nodeNames = [];
 foreach($nodes as $node) {
   $nodeNames[$node['address']] = $node['nickname'];
 }
+
+# TODO modularize credit summary generation
+# TODO this really should be in mongo...
+
+$creditSummary = [];
+$agg = [];
+
+foreach($creditInfo as $transaction) {
+  foreach($transaction['request']['params']['inputs'] as $input) {
+    $agg[] = $input + ['timestamp' => $transaction['request']['headers']['timestamp']];
+  }
+}
+
+uasort($agg,function($a,$b) {
+  # -1 first for asc; 1 first for desc
+  if(strtotime($a['timestamp'] == strtotime($b['timestamp']))) {
+    return 0;
+  } elseif (strtotime($a['timestamp'] < strtotime($b['timestamp']))) {
+    return 1;
+  } else {
+    return -1;
+  }
+});
+
+foreach($agg as $input) {
+  $other = null;
+  if ($input['to'] == $client->getAddress()) {
+    $other = $input['from'];
+    $amt = $input['amount'];
+  } elseif ($input['from'] == $client->getAddress()) {
+    $other = $input['to'];
+    $amt = -$input['amount'];
+  } elseif ($input['from'] == $input['to']) {
+    continue; // why
+  }
+  if(!isset($creditSummary[$other])) {
+    $creditSummary[$other] = $input;
+    $creditSummary[$other]['amount'] = $amt;
+    unset($creditSummary['to']);
+    unset($creditSummary['from']);
+  } else {
+    $creditSummary[$other]['amount'] += $amt;
+    if(!empty($input['message'])) {
+      $creditSummary[$other]['message'] = $input['message'];
+    }
+    $creditSummary[$other]['timestamp'] = $input['timestamp'];
+  }
+}
+
+cog::emit($creditSummary);
 # TODO the send form is going to get too wide, please break it into rows
 ?>
   <details <?=$_GET['expand'] == 'credit' ? 'open' : ''?>>
@@ -59,24 +109,22 @@ foreach($nodes as $node) {
         <th>Address</th>
         <th>Type</th>
         <th>Amount</th>
-        <th>Message</th>
+        <th>Last Message</th>
         <th>Last Transaction</th>
       </tr>
       <?php
-      foreach($creditInfo as $transaction) {
-        foreach($transaction['request']['params']['inputs'] as $input) {
-	  if($input['to'] != $client->getAddress()) continue;
+      foreach($creditSummary as $addr => $data) {
+	if($data['amount'] <= 0) continue;
       ?>
       <tr>
-        <td><?=$nodeNames[$input['from']] ? : 'N/A'?></td>
-        <td><?=$input['from']?></td>
+        <td><?=$nodeNames[$addr] ? : 'N/A'?></td>
+        <td><?=$addr?></td>
         <td>Credit</td>
-        <td><?=$input['amount']?></td>
-        <td><?=htmlentities($input['message'])?></td>
-        <td><?=$transaction['request']['headers']['timestamp']?></td>
+        <td><?=abs($data['amount'])?></td>
+        <td><?=htmlentities($data['message'])?></td>
+        <td><?=$data['timestamp']?></td>
       </tr>
       <?php
-        }
       }
       ?>
     </table>
@@ -87,24 +135,22 @@ foreach($nodes as $node) {
         <th>Address</th>
         <th>Type</th>
         <th>Amount</th>
-        <th>Message</th>
+        <th>Last Message</th>
         <th>Last Transaction</th>
       </tr>
       <?php
-      foreach($creditInfo as $transaction) {
-        foreach($transaction['request']['params']['inputs'] as $input) {
-	  if($input['from'] != $client->getAddress()) continue;
+      foreach($creditSummary as $addr => $data) {
+	if($data['amount'] >= 0) continue;
       ?>
       <tr>
-        <td><?=$nodeNames[trim($input['to'])] ? : 'N/A'?></td>
-        <td><?=$input['to']?></td>
+        <td><?=$nodeNames[$addr] ? : 'N/A'?></td>
+        <td><?=$addr?></td>
         <td>Credit</td>
-        <td><?=$input['amount']?></td>
-        <td><?=htmlentities($input['message'])?></td>
-        <td><?=$transaction['request']['headers']['timestamp']?></td>
+        <td><?=abs($data['amount'])?></td>
+        <td><?=htmlentities($data['message'])?></td>
+        <td><?=$data['timestamp']?></td>
       </tr>
       <?php
-        }
       }
       ?>
     </table>
