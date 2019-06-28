@@ -37,6 +37,9 @@ if(!empty($_POST)) {
 }
 
 if($client->hasParty()) {
+	if(!isset($_GET['expand'])) {
+		$_GET['expand'] = 'credit';
+	}
 	$summary = $client->getSummary(
 		$client->getEnvironment(),
 		$client->getAddress()
