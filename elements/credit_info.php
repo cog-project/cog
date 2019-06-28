@@ -116,7 +116,11 @@ foreach($agg as $input) {
 	if($data['amount'] <= 0) continue;
       ?>
       <tr>
-        <td><?=$nodeNames[$addr] ? : 'N/A'?></td>
+        <td>
+	  <a href='?transaction_history=<?=$addr?>'>
+	    <b><?=$nodeNames[$addr] ? : 'N/A'?></b>
+	  </a>
+	</td>
         <td><?=$addr?></td>
         <td>Credit</td>
         <td><?=abs($data['amount'])?></td>
@@ -142,8 +146,14 @@ foreach($agg as $input) {
 	if($data['amount'] >= 0) continue;
       ?>
       <tr>
-        <td><?=$nodeNames[$addr] ? : 'N/A'?></td>
-        <td><?=$addr?></td>
+        <td>
+	  <?=$nodeNames[$addr] ? : 'N/A'?>
+	</td>
+        <td>
+	  <a href='?transaction_history=<?=$addr?>'>
+	    <b><?=$addr?></b>
+	  </a>
+	</td>
         <td>Credit</td>
         <td><?=abs($data['amount'])?></td>
         <td><?=htmlentities($data['message'])?></td>
