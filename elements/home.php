@@ -20,6 +20,15 @@
 	  'client' => $client
 	]
       );
+    } elseif(isset($_GET['transaction_history'])) {
+      renderElement(
+        'transaction_history',
+	[
+	  'addr' => $_GET['transaction_history'],
+	  'client' => $client,
+	  'summary' => $summary,
+	]
+      );
     } else {
       renderElement('panel_main',['summary' => $summary,'client'=>$client]);
     }
