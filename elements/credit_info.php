@@ -117,11 +117,13 @@ foreach($agg as $input) {
       ?>
       <tr>
         <td>
-	  <a href='?transaction_history=<?=$addr?>'>
 	    <b><?=$nodeNames[$addr] ? : 'N/A'?></b>
-	  </a>
 	</td>
-        <td><?=$addr?></td>
+        <td>
+	  <a href='?transaction_history=<?=$addr?>'>
+          <?=$addr?>
+	  </a>
+        </td>
         <td>Credit</td>
         <td><?=abs($data['amount'])?></td>
         <td><?=htmlentities($data['message'])?></td>
