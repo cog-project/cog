@@ -26,7 +26,7 @@
 	[
 	  'addr' => $_GET['transaction_history'],
 	  'client' => $client,
-	  'summary' => $summary,
+	  'creditInfo' => $creditInfo,
 	]
       );
     } else {
