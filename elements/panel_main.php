@@ -23,7 +23,7 @@ foreach($cats as $k => $v) {
   }
 ?>
 <h3><?=$v?></h3>
-<table class='view'>
+<table class='view small'>
   <tr>
    <th>Hash</th>
    <th>Address</th>
