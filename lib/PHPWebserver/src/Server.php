@@ -82,17 +82,30 @@ class Server
 		{
 			throw new Exception( 'The given argument should be callable.' );
 		}
+
+		$procs = [];
 		
 		while ( 1 ) 
 		{
 			// listen for connections
 			socket_listen( $this->socket );
-			
+
+			$procs[] = \future::start([$this,"proc"],[$this->socket,$callback]);
+
+			foreach($procs as $i => $proc) {
+				if(\future::terminated($proc)) {
+					unset($procs[$i]);
+				}
+			}
+		}
+	}
+
+	public function proc($socket,$callback) {
 			// try to get the client socket resource
 			// if false we got an error close the connection and continue
 			if ( !$client = socket_accept( $this->socket ) ) 
 			{
-				socket_close( $client ); continue;
+				socket_close( $client ); return;
 			}
 			
 			// create new request instance with the clients header.
@@ -115,8 +128,8 @@ class Server
 			// write the response to the client socket
 			socket_write( $client, $response, strlen( $response ) );
 			
+			socket_shutdown($client,1);
 			// close the connetion so we can accept new ones
 			socket_close( $client );
-		}
 	}
 }
