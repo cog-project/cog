@@ -6,6 +6,11 @@ if(isset($argv)) { # cli
   ]);
   foreach($opts as $k => $v) {
     $$k = json_decode($v,true);
+    if($k == '_POST' || $k == '_GET') {
+      foreach($$k as $kk => $vv) {
+        $_REQUEST[$kk] = $vv;
+      }
+    }
   }
 } else { # apache
   
