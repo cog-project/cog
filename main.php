@@ -5,10 +5,8 @@ if(isset($argv)) { # cli
     '_GET::',
   ]);
   foreach($opts as $k => $v) {
-    $$k = escapeshellcmd;
+    $$k = json_decode($v,true);
   }
-  print_r($opts);
-  print_r($argv);
 } else { # apache
   
 }
