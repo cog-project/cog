@@ -3,7 +3,8 @@ class dbClient {
 	protected $client = null;
 
 	public function __construct() {
-		$this->client = new MongoInterface();
+		#$this->client = new MongoInterface();
+		$this->client = new FlatInterface();
 	}
 
 	public function queryByKey($table,$key = []) {

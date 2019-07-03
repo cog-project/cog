@@ -2,7 +2,23 @@
 // I'm going to hell.
 class ObjectId {
 }
-class MongoInterface {
+
+interface DatabaseInterface {
+	public function exec($db,$cmd);
+	public function listCollections($db);
+	public function createCollection($db,$collection);
+	public function dropCollection($db,$collection);
+	public function listDatabases($db);
+	public function countCollection($db,$collection);
+	public function executeCommand($db,$cmd);
+	public function query($db,$collection,$query,$opts = []);
+	public function executeQuery($db,$query,$opts = []);
+	public function insertMultiple($db,$data);
+	public function updateMultiple($db,$data,$filter);
+	public function deleteMultiple($table,$data);
+}
+
+class MongoInterface implements DatabaseInterface {
 	public function __construct() {
 	}
 	public function exec($db,$cmd) {
@@ -125,6 +141,28 @@ class MongoInterface {
 
 		$json = json_encode($args);
 		$cmd = "db.{$collection}.bulkWrite($json)";
+		$res = $this->exec($db,$cmd);
+		return $res;
+	}
+}
+
+class FlatInterface extends MongoInterface {
+	protected $flat;
+	public function __construct() {
+		$this->flat = new flat();
+	}
+	public function exec($db,$cmd) {
+		cog::emit(func_get_args());
+	}
+	public function query($db,$collection,$query,$opts = []) {
+		$res = $this->flat->query($db,$collection,$query,$opts);
+		return $res;
+	}
+	public function createCollection($db,$collection) {
+		$res = $this->flat->create_collection($db,$collection);
+	}
+	public function dropCollection($db,$collection) {
+		$cmd = "db.{$collection}.drop()";
 		$res = $this->exec($db,$cmd);
 		return $res;
 	}
