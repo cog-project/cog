@@ -1,4 +1,18 @@
 <?php
+if(isset($argv)) { # cli
+  $opts = getopt('',[
+    '_POST::',
+    '_GET::',
+  ]);
+  foreach($opts as $k => $v) {
+    $$k = escapeshellcmd;
+  }
+  print_r($opts);
+  print_r($argv);
+} else { # apache
+  
+}
+
 #set_time_limit(5);
 require dirname(__FILE__).'/block.class.php';
 require dirname(__FILE__).'/cog.class.php';
@@ -17,7 +31,6 @@ require dirname(__FILE__).'/lib/curl-emulator/curlemu.php';
 #require dirname(__FILE__).'/lib/';
 
 $reqExt = [
-#  'curl'
 ];
 
 $success = true;

@@ -6,7 +6,7 @@ include 'client_functions.php';
 
 ### TODO find pernanent location for update matters ###
 
-shell_exec("git fetch github");
+shell_exec("git fetch https://github.com/cog-project/cog.git");
 
 ### TODO find pernanent location for environment default ###
 

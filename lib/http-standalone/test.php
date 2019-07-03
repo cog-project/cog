@@ -1,4 +1,17 @@
 <?php
+function sig_handler($signo) {
+  switch ($signo) {
+      case SIGTERM:
+      $sock = $GLOBALS['sock'];
+      $linger = array ('l_linger' => 0, 'l_onoff' => 1);
+      socket_set_option($sock, SOL_SOCKET, SO_LINGER, $linger);
+      socket_shutdown($sock, 2);
+      socket_close($sock);
+      exit;
+      break;
+  }
+}
+
 $port = 80;
 $backlog = 16;
 $port_file = 'test';
@@ -18,13 +31,12 @@ while($c = socket_accept($sock)) {
     echo "$line\n";
     
     $mes = "whywhywhy";
+
+$mes = $line;
+
     $len = strlen($mes);
 
     socket_write($c,$mes,$len);
-
-    $linger = array ('l_linger' => 0, 'l_onoff' => 1);
-    socket_set_option($c, SOL_SOCKET, SO_LINGER, $linger);
     socket_close($c);
 } 
-socket_close($sock);
 ?>
