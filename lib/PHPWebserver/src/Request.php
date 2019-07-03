@@ -23,7 +23,7 @@ class Request
 	 *
 	 * @var array
 	 */
-	protected $parameters = [];
+	public $parameters = [];
 
 	public $post = [];
 
@@ -42,6 +42,7 @@ class Request
 	 */
 	public static function withHeaderString( $header )
 	{
+echo "$header\n";
 		$lines = explode( "\n", $header );
 
 		// payload
@@ -95,7 +96,7 @@ class Request
 		// parse the parmeters
 		parse_str( $params, $this->parameters );
 
-		if($this->method == 'POST' && strlen($post)) {
+		if($this->method == 'POST' && !empty($post)) {
 			// parse the post params
 			parse_str( $post, $this->post );
 		}
