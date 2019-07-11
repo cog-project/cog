@@ -50,7 +50,6 @@ class request {
 	}
 	static function request($server,$port,$params,$return_raw = false) {
 		$scheme = ($port == 443 ? "https" : "http"); # TODO force ssl or something
-
 		$url = "{$scheme}://{$server}/cog/server.php";
 
 		$ch = curl_init();
@@ -72,6 +71,7 @@ class request {
 			'starttransfer_time' => $info['starttransfer_time'],
 			'redirect_time' => $info['redirect_time'],
 		];
+		
 		curl_close($ch);
 
 		if($return_raw) {

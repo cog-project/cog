@@ -82,7 +82,7 @@ trait mongoTests {
 		try {
 			$db->collectionCreate($dbName,$collection);
 		} catch (Exception $e) {
-			$this->assertFalse($attempt2,print_r($e,1));
+			$this->assertFalse($attempt2,"Failed first and second attempts to create Mongo collection '{$dbName}.{$collection}'.");
 			$db->collectionDrop($dbName,$collection);
 			$this->testMongoCreateCollection($dbName,$collection,true);
 		}

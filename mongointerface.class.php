@@ -146,25 +146,94 @@ class MongoInterface implements DatabaseInterface {
 	}
 }
 
-class FlatInterface extends MongoInterface {
+#class FlatInterface extends MongoInterface {
+class FlatInterface implements DatabaseInterface {
 	protected $flat;
 	public function __construct() {
 		$this->flat = new flat();
 	}
 	public function exec($db,$cmd) {
+		cog::emit(__FUNCTION__);
 		cog::emit(func_get_args());
 	}
 	public function query($db,$collection,$query,$opts = []) {
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
 		$res = $this->flat->query($db,$collection,$query,$opts);
 		return $res;
 	}
 	public function createCollection($db,$collection) {
 		$res = $this->flat->create_collection($db,$collection);
+		return $res;
 	}
 	public function dropCollection($db,$collection) {
-		$cmd = "db.{$collection}.drop()";
-		$res = $this->exec($db,$cmd);
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+		$res = $this->flat->drop_collection($db,$collection);
 		return $res;
+	}
+	public function listCollections($db) {
+		$res = $this->flat->list_collections($db);
+		return $res;
+	}
+	public function listDatabases($db) {
+		$res = $this->flat->list_databases();
+		return $res;
+	}
+	public function countCollection($db,$collection) {
+                $res = $this->flat->count_collection($db,$collection);
+		return $res;
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+	}
+	public function executeCommand($db,$cmd) {
+		$keys = array_keys($cmd);
+		$key = $keys[0];
+		$val = $cmd[$key];
+		switch($key) {
+			case 'count':
+				$res = $this->countCollection($db,$val);
+				break;
+			case 'create':
+				$res = $this->createCollection($db,$val);
+				break;
+			case 'drop':
+				$res = $this->dropCollection($db,$val);
+				break;
+			case 'listDatabases':
+				$res = $this->listDatabases($db);
+				break;
+			case 'listCollections':
+				$res = $this->listCollections($db);
+				break;
+			default:
+				throw new Exception("Unsupported DB Command: $key");
+				break;
+		}
+		return $res;
+	}
+	public function executeQuery($db,$query,$opts = []) {
+		$split = explode(".",$db);
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+	}
+	public function insertMultiple($db,$data) {
+		$split = explode(".",$db);
+		$this->flat->insert_multiple($split[0],$split[1],$data);
+	}
+	public function insert($db,$data) {
+		$split = explode(".",$db);
+		$this->flat->insert($split[0],$split[1],$data);
+	}
+	public function updateMultiple($db,$data,$filter) {
+		$split = explode(".",$db);
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+	}
+	public function deleteMultiple($table,$data) {
+		$split = explode(".",$db);
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
 	}
 }
 ?>
