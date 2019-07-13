@@ -5,13 +5,62 @@ class flat {
   }
   public function __construct() {
   }
-  public function query($db,$collection,$query,$opts) {
-	if(!$this->collection_exists($db,$collection)) {
-	  return [];
-	}
-	cog::emit(func_get_args());
-	$stack = debug_print_backtrace();
-	cog::emit($stack);
+  public function query($db,$collection,$query = [],$opts = []) {
+    if(!$this->collection_exists($db,$collection)) {
+      return [];
+    }
+
+    #emit("Querying, {$db}.{$collection}: ".print_r([$query,$opts],1));
+    $raw = $this->get_collection_data($db,$collection);
+if(!empty($raw)) {
+cog::emit([$db,$collection,$query,$opts,$raw]);
+}
+    $this->filter($raw,$query);
+    #emit("Result: ".print_r($raw,1));
+    return $raw;
+  }
+  public function should_filter($val,$criteria) {
+    if(!is_array($criteria)) {
+      if($val != $criteria) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    foreach($criteria as $k=>$v) {
+      switch($k) {
+        case '$ne':
+          if($val == $v) {
+	    return true;
+          }
+          break;
+        default:
+	  if($val != $v) {
+	    return true;
+          }
+	  break;
+      }
+    }
+    return false;
+  }
+  public function filter_for_key(&$data,$key,$val) {
+    foreach($data as $i => $row) {
+      if(!isset($row[$key])) {
+        continue;
+      }
+      if($this->should_filter($row[$key],$val)) {
+        unset($data[$i]);
+      }
+    }
+  }
+  public function filter(&$data,$query) {
+    foreach($query as $k => $v) {
+      switch($k) {
+        default:
+          $this->filter_for_key($data,$k,$v);
+          break;
+      }
+    }
   }
   public function get_db_path($db = '.') {
     $path = "{$this->get_path()}/{$db}";
@@ -45,7 +94,7 @@ class flat {
     if(!$this->collection_exists($db,$collection)) {
       return true;
     }
-    passthru("rm -rf ".dirname(__FILE__)."/{$this->get_db_path($db)}/{$collection}");
+    passthru("rm -rf ".$this->get_collection_path($db,$collection));
   }
   public function list_databases() {
     $fullpath = $this->get_path();
@@ -74,6 +123,22 @@ class flat {
     return array_values($res);
   }
   public function count_collection($db,$collection) {
+    return count($this->list_collection_records($db,$collection));
+  }
+  public function insert($db,$collection,$data) {
+    $hash = sha1(uniqid());
+    $data['_id'] = $hash;
+    file_put_contents($this->get_collection_path($db,$collection)."/{$hash}",json_encode($data));
+  }
+  public function insert_multiple($db,$collection,$data) {
+    foreach($data as $row) {
+      $this->insert($db,$collection,$row);
+    }
+  }
+  public function list_collection_records($db,$collection) {
+    if(!$this->collection_exists($db,$collection)) {
+      return [];
+    }
     $fullpath = $this->get_collection_path($db,$collection);
     $res = scandir($fullpath);
     foreach($res as $i => $f) {
@@ -81,11 +146,49 @@ class flat {
         unset($res[$i]);
       }
     }
-    return count($res);
+    return array_values($res);
   }
-  public function insert($db,$collection,$data) {
-    $data['_id'] = sha1(uniqid());
-    $
+  public function get_collection_data($db,$collection) {
+    if(!$this->collection_exists($db,$collection)) {
+      return [];
+    }
+    $data = [];
+    $fullpath = $this->get_collection_path($db,$collection);
+    $res = $this->list_collection_records($db,$collection);
+    foreach($res as $f) {
+      $file = "{$fullpath}/{$f}";
+      $data[] = json_decode(file_get_contents($file),true);
+    }
+    return $data;
+  }
+  public function update($db,$collection,$row,$filter) {
+    $data = $this->query($db,$collection,$filter);
+    foreach($data as $i => &$v) {
+      $id = $v['_id'];
+      $v = $row;
+      $v['_id'] = $id;
+      file_put_contents($this->get_collection_path($db,$collection)."/{$id}",json_encode($v));
+    }
+  }
+  public function update_multiple($db,$collection,$data,$filter) {
+    foreach($data as $row) {
+      $this->update($db,$collection,$row,$filter);
+    }
+  }
+  public function delete_multiple($db,$collection,$data) {
+    foreach($data as $k => $v) {
+      $id = $v['_id'];
+      if(file_exists($this->get_collection_path($db,$collection)."/{$id}")) {
+        passthru("rm ".$this->get_collection_path($db,$collection)."/{$id}");
+        unset($data[$k]);
+      } else {
+        $matches = $this->query($db,$collection,$v);
+        foreach($matches as $kk => $vv) {
+          $id = $v['_id'];
+          passthru("rm ".$this->get_collection_path($db,$collection)."/{$id}");
+        }
+      }
+    }
   }
 }
 ?>

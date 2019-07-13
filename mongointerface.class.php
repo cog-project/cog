@@ -157,8 +157,6 @@ class FlatInterface implements DatabaseInterface {
 		cog::emit(func_get_args());
 	}
 	public function query($db,$collection,$query,$opts = []) {
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
 		$res = $this->flat->query($db,$collection,$query,$opts);
 		return $res;
 	}
@@ -167,8 +165,6 @@ class FlatInterface implements DatabaseInterface {
 		return $res;
 	}
 	public function dropCollection($db,$collection) {
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
 		$res = $this->flat->drop_collection($db,$collection);
 		return $res;
 	}
@@ -183,8 +179,6 @@ class FlatInterface implements DatabaseInterface {
 	public function countCollection($db,$collection) {
                 $res = $this->flat->count_collection($db,$collection);
 		return $res;
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
 	}
 	public function executeCommand($db,$cmd) {
 		$keys = array_keys($cmd);
@@ -214,8 +208,8 @@ class FlatInterface implements DatabaseInterface {
 	}
 	public function executeQuery($db,$query,$opts = []) {
 		$split = explode(".",$db);
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
+		$data = $this->flat->query($split[0],$split[1],$query,$opts);
+		return $data;
 	}
 	public function insertMultiple($db,$data) {
 		$split = explode(".",$db);
@@ -227,13 +221,13 @@ class FlatInterface implements DatabaseInterface {
 	}
 	public function updateMultiple($db,$data,$filter) {
 		$split = explode(".",$db);
+		$this->flat->update_multiple($split[0],$split[1],$data,$filter);
 		cog::emit(__FUNCTION__);
 		cog::emit(func_get_args());
 	}
-	public function deleteMultiple($table,$data) {
+	public function deleteMultiple($db,$data) {
 		$split = explode(".",$db);
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
+		$this->flat->delete_multiple($split[0],$split[1],$data);
 	}
 }
 ?>
