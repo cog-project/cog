@@ -1,5 +1,6 @@
 <?php
 class flat {
+  public static $cache = [];
   public function get_path() {
     return dirname(__FILE__)."/data";
   }
@@ -129,6 +130,7 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
     $hash = sha1(uniqid());
     $data['_id'] = $hash;
     file_put_contents($this->get_collection_path($db,$collection)."/{$hash}",json_encode($data));
+    self::$cache[$hash] = $data;
   }
   public function insert_multiple($db,$collection,$data) {
     foreach($data as $row) {
@@ -157,7 +159,9 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
     $res = $this->list_collection_records($db,$collection);
     foreach($res as $f) {
       $file = "{$fullpath}/{$f}";
-      $data[] = json_decode(file_get_contents($file),true);
+      $contents = json_decode(file_get_contents($file),true);
+      $data[] = $contents;
+      self::$cache[$f] = $contents;
     }
     return $data;
   }
@@ -168,6 +172,7 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
       $v = $row;
       $v['_id'] = $id;
       file_put_contents($this->get_collection_path($db,$collection)."/{$id}",json_encode($v));
+      self::$cache[$id] = $v;
     }
   }
   public function update_multiple($db,$collection,$data,$filter) {
@@ -181,11 +186,13 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
       if(file_exists($this->get_collection_path($db,$collection)."/{$id}")) {
         passthru("rm ".$this->get_collection_path($db,$collection)."/{$id}");
         unset($data[$k]);
+	unset(self::$cache[$id]);
       } else {
         $matches = $this->query($db,$collection,$v);
         foreach($matches as $kk => $vv) {
           $id = $v['_id'];
           passthru("rm ".$this->get_collection_path($db,$collection)."/{$id}");
+	  unset(self::$cache[$id]);
         }
       }
     }
