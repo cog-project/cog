@@ -94,7 +94,7 @@ class Server
 
 			foreach($procs as $i => $proc) {
 				if(\future::terminated($proc)) {
-					future::wait($proc);
+					\future::wait($proc);
 					unset($procs[$i]);
 				}
 			}
