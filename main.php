@@ -30,9 +30,7 @@ require dirname(__FILE__).'/network.class.php';
 require dirname(__FILE__).'/mongointerface.class.php';
 require dirname(__FILE__).'/request_validator.class.php';
 require dirname(__FILE__).'/lib/curl-emulator/curlemu.php';
-require dirname(__FILE__).'/lib/flat/flat.class.php';
-
-#require dirname(__FILE__).'/lib/';
+require dirname(__FILE__).'/lib/SleekDB/src/SleekDB.php';
 
 $reqExt = [
 ];
