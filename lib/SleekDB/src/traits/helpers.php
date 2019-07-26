@@ -21,18 +21,20 @@
       // Check if the data_directory exists.
       if ( !file_exists( $dataDir ) ) {
         // The directory was not found, create one.
-        if ( ! (mkdir( $dataDir, 7777, true ) && chown($dataDir,'www-data')) ) throw new \Exception( 'Unable to create the data directory at ' . $dataDir );
+        if ( ! (mkdir( $dataDir, 0777, true ) && chown($dataDir,'www-data')) ) throw new \Exception( 'Unable to create the data directory at ' . $dataDir );
       }
       
       clearstatcache();
       
       // Check if PHP has write permission in that directory.
-      #if ( !is_writable( $dataDir ) ) throw new \Exception( 'Data directory is not writable at "' . $dataDir . '." Please change data directory permission.' );
+      if ( !is_writable( $dataDir ) ) throw new \Exception( 'Data directory is not writable at "' . $dataDir . '." Please change data directory permission.' );
+      /*
       $start = microtime(true);
       while (!is_writable($dataDir)) {
         usleep(100000);
 	if(microtime(true) - $start > 1.0) throw new \Exception( 'Store path is not writable at "' . $dataDir . '." Please change store path permission.' );
       }
+      */
       // Finally check if the directory is readable by PHP.
       if ( !is_readable( $dataDir ) ) throw new \Exception( 'Data directory is not readable at "' . $dataDir . '." Please change data directory permission.' );
       // Set the data directory.
@@ -98,23 +100,24 @@
       // Check if the store exists.
       if ( !file_exists( $this->storePath ) ) {
         // The directory was not found, create one with cache directory.
-        if ( !(mkdir( $this->storePath, 7777, true ) && chown($this->storePath,'www-data')) ) throw new \Exception( 'Unable to create the store path at ' . $this->storePath );
+        if ( !(mkdir( $this->storePath, 0777, true ) && chown($this->storePath,'www-data')) ) throw new \Exception( 'Unable to create the store path at ' . $this->storePath );
         // Create the cache directory.
-        if ( !(mkdir( $this->storePath . 'cache', 7777, true ) && chown($this->storePath.'cache','www-data')) ) throw new \Exception( 'Unable to create the store\'s cache directory at ' . $this->storePath . 'cache' );
+        if ( !(mkdir( $this->storePath . 'cache', 0777, true ) && chown($this->storePath.'cache','www-data')) ) throw new \Exception( 'Unable to create the store\'s cache directory at ' . $this->storePath . 'cache' );
         // Create the data directory.
-        if ( !(mkdir( $this->storePath . 'data', 7777, true ) && chown($this->storePath.'data','www-data')) ) throw new \Exception( 'Unable to create the store\'s data directory at ' . $this->storePath . 'data' );
+        if ( !(mkdir( $this->storePath . 'data', 0777, true ) && chown($this->storePath.'data','www-data')) ) throw new \Exception( 'Unable to create the store\'s data directory at ' . $this->storePath . 'data' );
         // Create the store counter file.
         if ( ! (file_put_contents( $this->storePath . '_cnt.sdb', '0' ) && chown($this->storePath . '_cnt.sdb','www-data')) ) throw new \Exception( 'Unable to create the system counter for the store! Please check write permission' );
       }
-#      clearstatcache(true,$this->storePath);
       clearstatcache();
       // Check if PHP has write permission in that directory.
-      #if ( !is_writable( $this->storePath ) ) throw new \Exception( 'Store path is not writable at "' . $this->storePath . '." Please change store path permission.' );
+      if ( !is_writable( $this->storePath ) ) throw new \Exception( 'Store path is not writable at "' . $this->storePath . '." Please change store path permission. ('.fileperms($this->storePath) .')' );
+      /*
       $start = microtime(true);
       while (!is_writable($this->storePath)) {
         usleep(100000);
 	if(microtime(true) - $start > 1.0) throw new \Exception( 'Store path is not writable at "' . $this->storePath . '." Please change store path permission.' );
       }
+      */
       // Finally check if the directory is readable by PHP.
       if ( !is_readable( $this->storePath ) ) throw new \Exception( 'Store path is not readable at "' . $this->storePath . '." Please change store path permission.' );
     }
@@ -277,8 +280,8 @@
         foreach( explode( '.', $field ) as $i ) {
           // If the field do not exists then insert an empty string.
           if ( ! isset( $data[ $i ] ) ) {
-            $data = '';
-            throw new \Exception( '"'.$i.'" index was not found in the provided data array' );
+            $data = null; #previously ''
+            #throw new \Exception( '"'.$i.'" index was not found in the provided data array' );
             break;
           } else {
             // The index is valid, collect the data.
