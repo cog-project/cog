@@ -40,7 +40,7 @@ trait mongoTests {
 		foreach($updated_rows as $row) {
 			$match = false;
 			foreach($rows as $orig) {
-				if($orig['why'] == $row['why'] && $orig['because'] == $row['because']) {
+				if(@$orig['why'] == @$row['why'] && @$orig['because'] == @$row['because']) {
 					$match = true;
 					break;
 				}
@@ -53,7 +53,8 @@ trait mongoTests {
 
 		// Verify
 		$updated_rows = $db->dbQuery('cogTest.blocks',['why'=>['$ne'=>null],'because'=>['$ne'=>null]]);
-		$this->assertTrue(!count($updated_rows));
+		$this->assertTrue($db->getCount('cogTest','blocks') == 0,"Collection cogTest.blocks is not empty.");
+		$this->assertTrue(!count($updated_rows),"Rows were found after deletion:\n".print_r($updated_rows,1));
 	}
 
 	public function testMongoDriver() {
@@ -82,7 +83,7 @@ trait mongoTests {
 		try {
 			$db->collectionCreate($dbName,$collection);
 		} catch (Exception $e) {
-			$this->assertFalse($attempt2,print_r($e,1));
+			$this->assertFalse($attempt2,"Failed first and second attempts to create Mongo collection '{$dbName}.{$collection}'.");
 			$db->collectionDrop($dbName,$collection);
 			$this->testMongoCreateCollection($dbName,$collection,true);
 		}
@@ -101,7 +102,7 @@ trait mongoTests {
 		$network = $this->testNetwork();
 		$this->assertTrue($network->length() == 0);
 		$collections = $db->showCollections("$dbName");
-		$this->assertFalse(in_array($collection,$collections));
+		$this->assertFalse(in_array($collection,$collections),"Collection '{$collection}' found in collection list ".print_r($collections,1).".");
 	}
 	public function testMongoCreateDropCollection($dbName = "cogTest",$collection = "blocks",$attempt2 = false) {
 		$this->testMongoCreateCollection($dbName,$collection);
