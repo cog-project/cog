@@ -164,12 +164,12 @@ class SleekInterface implements DatabaseInterface {
 		$database = $this->getDb($db);
 		if(is_array($database) && isset($database[$col])) {
 			$collection = $database[$col];
-			cog::emit(['a',$collection]);
+			#cog::emit(['a',$collection]);
 			return $collection;
 		} elseif (file_exists(dirname(__FILE__)."/data/{$db}.{$col}")) {
 			$collection = \SleekDB\SleekDB::store("{$db}.{$col}",dirname(__FILE__)."/data");
 			$this->db[$db][$col] = $collection;
-			cog::emit(['b',$collection]);
+			#cog::emit(['b',$collection]);
 			return $collection;
 		}
 	}
@@ -269,30 +269,67 @@ class SleekInterface implements DatabaseInterface {
 
 		$collection = $this->getCollection($db,$col);
 
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
-		cog::emit([$db,$col,$collection]);
+		#cog::emit([$db,$col,$collection]);
 
 		if(is_object($collection)) {
-			if(!empty($query)) {
-				$query = $collection->where($query);
-			} else {
-				$query = $collection;
+			$q = $collection;
+			foreach($query as $k => $v) {
+				if(is_array($v)) {
+					$keys = array_keys($v);
+					$key = reset($keys);
+					$val = $v[$key];
+					switch($key) {
+						case '$ne':
+							$q = $q->where($k,'!=',$val);
+							cog::emit($q);
+							break;
+						default:
+							cog::emit([$k,$v]);
+							break;
+					}
+				} else {
+					$q = $q->search($k,$v);
+				}
 			}
-			$res = $query->fetch();
-			cog::emit($res);
+			/*
+			$q = $collection->search("{$db}.{$col}",$query);
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+		cog::emit($query);
+		cog::emit($q);
+		*/
 			foreach($opts as $opt) {
-				cog::emit($opts);
-				break;
+				foreach($opts as $op => $crit) {
+					switch($op) {
+						case 'sort':
+							$keys = array_keys($crit);
+							$key = reset($keys);
+							$val = $crit[$key];
+							$q->orderBy($val == '-1' ? 'desc' : 'asc',$key);
+							break;
+						case 'limit':
+							$q->limit($crit);
+							break;
+						default:
+							cog::emit($opts);
+							break;
+					}
+				}
 			}
+			$res = $q->fetch();
+		cog::emit(["{$db}.{$col}",$query,$res]);
 			return $res;
 		} else {
 			return [];
 		}
 	}
 	public function insertMultiple($db,$data) {
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
+		$split = explode(".",$db);
+		$db = $split[0];
+		$col = $split[1];
+
+		$collection = $this->getCollection($db,$col);
+		$collection->insertMany($data);
 	}
 	public function updateMultiple($db,$data,$filter) {
 		cog::emit(__FUNCTION__);
