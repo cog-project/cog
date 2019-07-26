@@ -217,7 +217,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			'params' => ['address' => $party->getAddress()],
 		],true);
 		$this->assertTrue(isset($res['data']));
-		$this->assertTrue(strlen($res['data']) > 0);
+		$this->assertTrue(strlen($res['data']) > 0,"Resultant data is empty.  Result:\n".print_r($res,1));
 	}
 
 	# testValidateAddrRequest, with signature verification under a microscope.
