@@ -4,7 +4,7 @@ class dbClient {
 
 	public function __construct() {
 		#$this->client = new MongoInterface();
-		$this->client = new FlatInterface();
+		$this->client = new SleekInterface();
 	}
 
 	public function queryByKey($table,$key = []) {
