@@ -146,88 +146,161 @@ class MongoInterface implements DatabaseInterface {
 	}
 }
 
-#class FlatInterface extends MongoInterface {
-class FlatInterface implements DatabaseInterface {
-	protected $flat;
+class SleekInterface implements DatabaseInterface {
+	protected $dbs = [];
 	public function __construct() {
-		$this->flat = new flat();
+	}
+	public function &getDb($db,$new = false) {
+		if(isset($this->dbs[$db])) {
+			$db = &$this->dbs[$db];
+		}
+		elseif ($new) {
+			$this->db[$db] = [];
+			$db = &$this->db[$db];
+		}
+		return $db;
+	}
+	public function getCollection($db,$col) {
+		$database = $this->getDb($db);
+		if(is_array($database) && isset($database[$col])) {
+			$collection = $database[$col];
+			cog::emit(['a',$collection]);
+			return $collection;
+		} elseif (file_exists(dirname(__FILE__)."/data/{$db}.{$col}")) {
+			$collection = \SleekDB\SleekDB::store("{$db}.{$col}",dirname(__FILE__)."/data");
+			$this->db[$db][$col] = $collection;
+			cog::emit(['b',$collection]);
+			return $collection;
+		}
 	}
 	public function exec($db,$cmd) {
 		cog::emit(__FUNCTION__);
 		cog::emit(func_get_args());
 	}
-	public function query($db,$collection,$query,$opts = []) {
-		$res = $this->flat->query($db,$collection,$query,$opts);
+	public function listCollections($db) {
+		$collections = scandir(dirname(__FILE__).'/data/');
+		$res = [];
+		foreach($collections as $i => $f) {
+			if(!preg_match("/{$db}.[a-zA-Z0-9]+/",$f)) {
+				unset($collections[$i]);
+			} else {
+				$split = explode(".",$f);
+				$res[$split[1]] = ['name' => $split[1]];
+			}
+		}
 		return $res;
 	}
 	public function createCollection($db,$collection) {
-		$res = $this->flat->create_collection($db,$collection);
-		return $res;
+		$database = $this->getDb($db,true);
+		if (is_array($database)) {
+			$database[$collection] = \SleekDB\SleekDB::store("{$db}.{$collection}",dirname(__FILE__)."/data");
+		}
 	}
-	public function dropCollection($db,$collection) {
-		$res = $this->flat->drop_collection($db,$collection);
-		return $res;
+	public function dropCollection($db,$col) {
+		$collection = $this->getCollection($db,$col);
+		if (is_object($collection)) {
+			$collection->deleteStore();
+			unset($this->db[$db][$col]);
+		}
 	}
-	public function listCollections($db) {
-		$res = $this->flat->list_collections($db);
-		return $res;
+	public function listDatabases($db = null) {
+		$scan = scandir(dirname(__FILE__).'/data');
+		$dbs = [];
+		foreach($scan as $i => $f) {
+			if(!preg_match("/[a-zA-Z0-9]+.[a-zA-Z0-9]+/",$f)) {
+				unset($scan[$i]);
+			} else {
+				$split = explode(".",$f);
+				$dbName = $split[0];
+				if(!isset($dbs[$dbName])) {
+					$dbs[$dbName] = ['name' => $dbName];
+				}
+			}
+		}
+		return ['databases' => $dbs];
 	}
-	public function listDatabases($db) {
-		$res = $this->flat->list_databases();
-		return $res;
-	}
-	public function countCollection($db,$collection) {
-                $res = $this->flat->count_collection($db,$collection);
-		return $res;
+	public function countCollection($db,$col) {
+		$collection = $this->getCollection($db,$col);
+		if(!is_object($collection)) {
+			return 0;
+		}
+		$scan = scandir(dirname(__FILE__).'/data/{$db}.{$col}/data');
+		foreach($scan as $i => $f) {
+			if(!preg_match("/.json/",$f)) {
+				unset($scan[$i]);
+			}
+		}
+		return count($scan);
 	}
 	public function executeCommand($db,$cmd) {
 		$keys = array_keys($cmd);
 		$key = $keys[0];
 		$val = $cmd[$key];
-		switch($key) {
+
+		switch ($key) {
 			case 'count':
-				$res = $this->countCollection($db,$val);
-				break;
+				return $this->countCollection($db,$val);
 			case 'create':
-				$res = $this->createCollection($db,$val);
+				return $this->createCollection($db,$val);
 				break;
 			case 'drop':
-				$res = $this->dropCollection($db,$val);
-				break;
-			case 'listDatabases':
-				$res = $this->listDatabases($db);
+				return $this->dropCollection($db,$val);
 				break;
 			case 'listCollections':
-				$res = $this->listCollections($db);
+				return $this->listCollections($db);
+				break;
+			case 'listDatabases':
+				return $this->listDatabases();
 				break;
 			default:
-				throw new Exception("Unsupported DB Command: $key");
+				cog::emit(__FUNCTION__);
+				cog::emit(func_get_args());				
 				break;
 		}
-		return $res;
 	}
-	public function executeQuery($db,$query,$opts = []) {
-		$split = explode(".",$db);
-		$data = $this->flat->query($split[0],$split[1],$query,$opts);
-		return $data;
-	}
-	public function insertMultiple($db,$data) {
-		$split = explode(".",$db);
-		$this->flat->insert_multiple($split[0],$split[1],$data);
-	}
-	public function insert($db,$data) {
-		$split = explode(".",$db);
-		$this->flat->insert($split[0],$split[1],$data);
-	}
-	public function updateMultiple($db,$data,$filter) {
-		$split = explode(".",$db);
-		$this->flat->update_multiple($split[0],$split[1],$data,$filter);
+	public function query($db,$collection,$query,$opts = []) {
 		cog::emit(__FUNCTION__);
 		cog::emit(func_get_args());
 	}
-	public function deleteMultiple($db,$data) {
+	public function executeQuery($db,$query = [],$opts = []) {
 		$split = explode(".",$db);
-		$this->flat->delete_multiple($split[0],$split[1],$data);
+		$db = $split[0];
+		$col = $split[1];
+
+		$collection = $this->getCollection($db,$col);
+
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+		cog::emit([$db,$col,$collection]);
+
+		if(is_object($collection)) {
+			if(!empty($query)) {
+				$query = $collection->where($query);
+			} else {
+				$query = $collection;
+			}
+			$res = $query->fetch();
+			cog::emit($res);
+			foreach($opts as $opt) {
+				cog::emit($opts);
+				break;
+			}
+			return $res;
+		} else {
+			return [];
+		}
+	}
+	public function insertMultiple($db,$data) {
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+	}
+	public function updateMultiple($db,$data,$filter) {
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
+	}
+	public function deleteMultiple($table,$data) {
+		cog::emit(__FUNCTION__);
+		cog::emit(func_get_args());
 	}
 }
 ?>
