@@ -80,9 +80,10 @@ class request {
 
 		$assoc = json_decode($res,true);
 		if(!is_array($assoc)) {
-			cog::emit("Failed to decode response ({$url}).");
-			cog::emit("Request:\n".print_r($params,1));
-			cog::emit("Response:\n".$res);
+			throw new Exception("Failed to decode response ({$url}).\n"
+			."Request:\n"
+			.print_r($params,1)."\n"
+			."Response:\n".$res);
 		}
 		if(!empty($assoc['misc'])) {
 			cog::emit($assoc['misc']);

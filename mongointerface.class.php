@@ -269,8 +269,6 @@ class SleekInterface implements DatabaseInterface {
 
 		$collection = $this->getCollection($db,$col);
 
-		#cog::emit([$db,$col,$collection]);
-
 		if(is_object($collection)) {
 			$q = $collection;
 			foreach($query as $k => $v) {
@@ -282,6 +280,9 @@ class SleekInterface implements DatabaseInterface {
 						case '$ne':
 							$q = $q->where($k,'!=',$val);
 							cog::emit($q);
+							break;
+						case '$exists':
+							$q = $q->where($k,$val ? '!=' : '==',"\0"); # but there's got to be a better way
 							break;
 						default:
 							cog::emit([$k,$v]);
@@ -317,7 +318,7 @@ class SleekInterface implements DatabaseInterface {
 				}
 			}
 			$res = $q->fetch();
-		cog::emit(["{$db}.{$col}",$query,$res]);
+		#cog::emit(["{$db}.{$col}",$query,$res]);
 			return $res;
 		} else {
 			return [];
@@ -334,6 +335,24 @@ class SleekInterface implements DatabaseInterface {
 	public function updateMultiple($db,$data,$filter) {
 		cog::emit(__FUNCTION__);
 		cog::emit(func_get_args());
+
+		$split = explode(".",$db);
+		$db = $split[0];
+		$col = $split[1];
+
+		$collection = $this->getCollection($db,$collection);
+		
+		foreach($data as $v) {
+			unset($v['_id']);
+			$toUpdate = array_shift($this->executeQuery($db,$filter,['limit'=>1]));
+#			$collection->
+			$args[] = ['updateOne' => ['filter' => $filter, 'update' => $v]];
+		}
+
+		$json = json_encode($args);
+		$cmd = "db.{$collection}.bulkWrite($json)";
+		$res = $this->exec($db,$cmd);
+		return $res;
 	}
 	public function deleteMultiple($table,$data) {
 		cog::emit(__FUNCTION__);
