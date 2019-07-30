@@ -103,9 +103,11 @@ trait walletTests {
 		]);
 		$nodes = $this->testListNodes();
 		$success = true;
+		cog::emit($nodes);
 		foreach($nodes as $node) {
 			if($node['ip_address'] == 'localhost' && $node['ip_port'] == $port) {
 				$success = false;
+				break;
 			}
 		}
 		$this->assertTrue($success,"Failed to remove node localhost:{$port}");
@@ -131,7 +133,11 @@ trait walletTests {
 		
 		$cfgp = $this->testGetConfig($wallet);
 		foreach($cfg as $k => $v) {
-			$this->assertTrue($v == $cfgp[$k]);
+			if(isset($cfgp[$k])) {
+				 $this->assertTrue($v == $cfgp[$k]);
+			} else {
+				$this->assertTrue($v == null);
+			}
 		}
 	}
 

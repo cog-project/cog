@@ -222,8 +222,6 @@ class FlatInterface implements DatabaseInterface {
 	public function updateMultiple($db,$data,$filter) {
 		$split = explode(".",$db);
 		$this->flat->update_multiple($split[0],$split[1],$data,$filter);
-		cog::emit(__FUNCTION__);
-		cog::emit(func_get_args());
 	}
 	public function deleteMultiple($db,$data) {
 		$split = explode(".",$db);
