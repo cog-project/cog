@@ -257,6 +257,7 @@ class network {
 			$end = [];
 			foreach($data as $t) {
 				$t = json_decode(json_encode($t),true);
+				unset($t['processed']);
 				$hash = $t['hash'];
 				$transactions[$hash] = $t;
 				if(!isset($start[$hash]) && $hash != $zero) {
