@@ -14,7 +14,7 @@ class flat {
     #emit("Querying, {$db}.{$collection}: ".print_r([$query,$opts],1));
     $raw = $this->get_collection_data($db,$collection);
 if(!empty($raw)) {
-cog::emit([$db,$collection,$query,$opts,$raw]);
+#cog::emit("Queried:\n".print_r([$db,$collection,$query,$opts,$raw],1));
 }
     $this->filter($raw,$query);
     #emit("Result: ".print_r($raw,1));
@@ -80,14 +80,17 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
     return ($this->db_exists($db) && file_exists($path) && is_dir($path));
   }
   public function create_db($db) {
+    if(!file_exists(dirname(__FILE__)."/data")) {
+      mkdir(dirname(__FILE__)."/data",0777);
+    }
     if($this->db_exists($db)) return false;
     $path = $this->get_db_path($db);
-    return mkdir($path);
+    return mkdir($path,0777) && chown($path,"www-data");
   }
   public function create_collection($db,$collection) {
     $this->create_db($db);
     if(!$this->collection_exists($db,$collection)) {
-      return mkdir("{$this->get_db_path($db)}/{$collection}");
+      return mkdir("{$this->get_db_path($db)}/{$collection}",0777) && chown("{$this->get_db_path($db)}/{$collection}","www-data");
     }
     return false;
   }
@@ -123,13 +126,31 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
     }
     return array_values($res);
   }
+  
   public function count_collection($db,$collection) {
     return count($this->list_collection_records($db,$collection));
   }
+  
+  public function read_from_file($path) {
+    if(!is_readable($path)) {
+      throw new Exception("File '$path' is not readable.");
+    }
+    return file_get_contents($path);
+  }
+  
   public function insert($db,$collection,$data) {
+    $this->create_collection($db,$collection);
+    
     $hash = sha1(uniqid());
     $data['_id'] = $hash;
-    file_put_contents($this->get_collection_path($db,$collection)."/{$hash}",json_encode($data));
+    $res = file_put_contents(
+      $this->get_collection_path($db,$collection)."/{$hash}",
+      json_encode($data)
+    );
+    if(!$res) {
+      throw new Exception("File '".$this->get_collection_path($db,$collection)."/{$hash}' is not writable.");
+    }
+    chmod($this->get_collection_path($db,$collection)."/{$hash}",0777);
     self::$cache[$hash] = $data;
   }
   public function insert_multiple($db,$collection,$data) {
@@ -159,19 +180,29 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
     $res = $this->list_collection_records($db,$collection);
     foreach($res as $f) {
       $file = "{$fullpath}/{$f}";
-      $contents = json_decode(file_get_contents($file),true);
-      $data[] = $contents;
+      $r = $this->read_from_file($file);
+      $contents = json_decode($r,true);
+      $data[$contents['_id']] = $contents;
       self::$cache[$f] = $contents;
     }
     return $data;
   }
   public function update($db,$collection,$row,$filter) {
     $data = $this->query($db,$collection,$filter);
-    foreach($data as $i => &$v) {
+    foreach($data as $i => $v) {
       $id = $v['_id'];
       $v = $row;
       $v['_id'] = $id;
-      file_put_contents($this->get_collection_path($db,$collection)."/{$id}",json_encode($v));
+      $data[$i] = $v;
+      $writepath = $this->get_collection_path($db,$collection)."/{$id}";
+      $success = file_put_contents(
+        $writepath,
+	json_encode($v)
+      );
+      chmod($this->get_collection_path($db,$collection)."/{$id}",0777);
+      if(!$success) {
+        throw new Exception('Failed to write to file: '.$writepath);
+      }
       self::$cache[$id] = $v;
     }
   }
@@ -183,18 +214,22 @@ cog::emit([$db,$collection,$query,$opts,$raw]);
   public function delete_multiple($db,$collection,$data) {
     foreach($data as $k => $v) {
       $id = $v['_id'];
-      if(file_exists($this->get_collection_path($db,$collection)."/{$id}")) {
-        passthru("rm ".$this->get_collection_path($db,$collection)."/{$id}");
-        unset($data[$k]);
-	unset(self::$cache[$id]);
+      if(!empty($id)) {
+        $this->delete_one($db,$collection,$id);
       } else {
-        $matches = $this->query($db,$collection,$v);
-        foreach($matches as $kk => $vv) {
-          $id = $v['_id'];
-          passthru("rm ".$this->get_collection_path($db,$collection)."/{$id}");
-	  unset(self::$cache[$id]);
-        }
+        $rows = $this->query($db,$collection,$data);
+	foreach($rows as $row) {
+	  $this->delete_one($db,$collection,$row['_id']);
+	}
       }
+    }
+  }
+  public function delete_one($db,$collection,$hash,$data = []) {
+    if(file_exists($this->get_collection_path($db,$collection)."/{$hash}")) {
+      passthru("rm ".$this->get_collection_path($db,$collection)."/{$hash}");
+      unset(self::$cache[$hash]);
+    } else {
+      throw new Exception("Failed to find item corresponding to hash '{$hash}'");
     }
   }
 }

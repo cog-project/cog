@@ -25,6 +25,17 @@ trait networkTests {
 		return $n;
 	}
 
+	public function testNetworkAddNode() {
+		$network = $this->testNetwork();
+		$res = $network->addNode([
+			'ip_address' => 'localhost',
+			'ip_port' => '80'
+		]);
+
+		$nodes = $this->testListNodes();
+		$this->assertTrue(count($nodes) > 0);
+	}
+	
 	public function testNetworkAdd($network = null,$block = null,$party = null, $lastHash = null) {
 
 		$this->markTestSkipped("Might be a little obsolete...");

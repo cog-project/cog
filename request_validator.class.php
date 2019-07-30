@@ -49,13 +49,14 @@ class requestValidator {
 
 	public function getHeaders() {
 		$params = $this->getRequest();
-		if(empty($params['headers'])) {
+		if(!isset($params['headers']) || empty($params['headers'])) {
 			$this->setError('No headers were included.');
 		}
 		return $params['headers'];
 	}
 
 	public function validateVersion() {
+		return; # TODO
 		$params = $this->getHeaders();
 		$headers = $params['headers'];
 	}

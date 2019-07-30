@@ -194,7 +194,6 @@ class network {
 				$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
 				// mark transasction as processed
 				$t['processed'] = true;
-error_log("updating cog.blocks for address {$t['request']['params']['address']} and hash {$t['hash']}");
 				$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t,['hash'=>$t['hash']]);
 			}
 		}
@@ -273,9 +272,10 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 	public function addNode($data) {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
 		if(count($res)) {
-			$data['_id'] = $res[0]['_id'];
+			$first = reset($res);
+			$data['_id'] = $first['_id'];
 			if(empty($data['ping_datetime'])) {
-				$data['ping_datetime'] = $res[0]['ping_datetime'];
+				$data['ping_datetime'] = $first['ping_datetime'];
 			}
 			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data,['ip_address'=>$data['ip_address'],'ip_port'=>$data['ip_port']]);
 		} else {
@@ -398,7 +398,7 @@ error_log("updating cog.blocks for address {$t['request']['params']['address']} 
 	public function getConfig($addr) {
 		$existing = $this->dbClient->queryByKey("{$this->db}.config",['address' => $addr]);
 		if(count($existing)) {
-			return $existing[0];
+			return reset($existing);
 		}
 		return null;
 	}
