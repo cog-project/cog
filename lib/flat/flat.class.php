@@ -16,8 +16,13 @@ class flat {
 if(!empty($raw)) {
 #cog::emit("Queried:\n".print_r([$db,$collection,$query,$opts,$raw],1));
 }
-    $this->filter($raw,$query);
-    #emit("Result: ".print_r($raw,1));
+cog::emit($query);
+    foreach($query as $cond) {
+      $this->filter($raw,$cond);
+    }
+    if($collection == 'endpoints') {
+    #cog::emit("Query: ".print_r($query,1)."\nResult: ".print_r($raw,1)."\n".print_r(debug_backtrace(),1));
+    }
     return $raw;
   }
   public function should_filter($val,$criteria) {
@@ -56,6 +61,7 @@ if(!empty($raw)) {
   }
   public function filter(&$data,$query) {
     foreach($query as $k => $v) {
+    cog::emit([$k,$v,reset($data)]);
       switch($k) {
         default:
           $this->filter_for_key($data,$k,$v);

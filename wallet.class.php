@@ -297,7 +297,8 @@ class wallet {
 			'address' => $this->party->getAddress(),
 			'public_key' => $this->party->getPublicKey()
 		]);
-		$res = $req->submit(null,null,true);
+		#$res = $req->submit(null,null,true);
+		$res = $req->submitLocal();
 		return $res['data'];
 	}
 

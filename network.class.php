@@ -186,7 +186,6 @@ class network {
 			$t = json_decode(json_encode($t),true);
 			unset($t['_id']);
 			$exists = $this->endpointExists($t['hash']);
-
 			if(!$exists) {
 				// add transaction to endpoints
 				$res = $this->dbClient->dbInsert("{$this->db}.endpoints",$t);
@@ -194,7 +193,7 @@ class network {
 				$res = $this->dbClient->dbDelete("{$this->db}.endpoints",['hash' =>$t['request']['headers']['prevHash']]);
 				// mark transasction as processed
 				$t['processed'] = true;
-				$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t,['hash'=>$t['hash']]);
+				#$res = $this->dbClient->dbUpdate("{$this->db}.blocks",$t,['hash'=>$t['hash']]);
 			}
 		}
 	}

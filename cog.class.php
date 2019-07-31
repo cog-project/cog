@@ -130,6 +130,10 @@ class cog {
 		echo '<pre>'.print_r($x,1).'</pre>';
 	}
 
+	static function log($message,$type /* INFO|DEBUG|ERROR */) {
+		# TODO
+	}
+
 	static function set_wallet($x) {
 		self::$wallet = $x;
 	}
