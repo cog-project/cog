@@ -111,9 +111,18 @@ trait mongoTests {
 	public function testCreditInfo() {
 		$network = $this->testNetwork();
 		$wallet = $this->testWallet();
+		
 		$this->testUpdateEndpoints($network,$wallet->getAddress());
+
+		$db = $network->getDbClient();
+		$data = $db->dbQuery("cogTest.blocks",['request.action' => ['$exists'=>true]]);
+		$this->assertTrue(count($data) > 0);
+		$empty = $db->dbQuery("cogTest.blocks",['request.action' => ['$exists'=>true]]);
+		$this->assertTrue(count($empty) == 0);
+		
 		$creditInfo = $network->getCreditInfo($wallet->getAddress());
 		cog::emit($creditInfo);
+		$this->assertTrue(!empty($creditInfo));
 	}
 	public function testUpdateEndpoints($network = null,$addr = null) {
 		$data = [];

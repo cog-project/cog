@@ -47,23 +47,67 @@ if(!empty($raw)) {
     }
     return false;
   }
-  public function filter_for_key(&$data,$key,$val) {
+  public function get_match_rows($data,$key) {
+    if(preg_match("/./",$key)) {
+      $key = explode(".",$key);
+      $ikey = array_shift($key);
+    } else {
+      $ikey = $key;
+      $key = [];
+    }
+    $out = [];
     foreach($data as $i => $row) {
-      if(!isset($row[$key])) {
+      if(!isset($row[$ikey])) {
         continue;
       }
-      if($this->should_filter($row[$key],$val)) {
-        unset($data[$i]);
+      $match_row = $row[$ikey];
+      if(count($key)) {
+        $match = false;
+        while(count($key)) {
+          $k = array_shift($key);
+          if(isset($match_row[$k])) {
+	    if(is_array($match_row[$k])) {
+	      $match_row = $match_row[$k];
+	    }
+	    if(empty($key)) {
+	      $success = true;
+	    } elseif (!is_array($match_row) && count($key)) {
+	      break;
+	    }
+	  } else {
+	    break;
+	  }
+        }
+      } else {
+        $match = true;
+      }
+      if(!$match) continue;
+      $out[$i] = $match_row;
+    }
+    return $out;
+  }
+  public function filter_for_key(&$data,$key,$val) {
+    $matches = $this->get_match_rows($data,$key);
+    foreach($matches as $i => $match_row) {
+      if($this->should_filter($match_row,$val)) {
+         unset($data[$i]);
       }
     }
   }
   public function exists($row,$k) {
+    $match_rows = $this->get_match_rows([$row],$k);
+    cog::emit($match_rows);
     if(!is_array($row)) {
       return false;
     }
+    cog::emit(func_get_args());
+    $matches = $this->get_match_rows([$row],$k);
+    cog::emit($matches);
     if(isset($row[$k])) {
       return true;
-    } else {
+    }
+    /*
+    else {
       $found = false;
       foreach($row as $rk => $rv) {
         $result = $this->exists($rv,$k);
@@ -74,6 +118,7 @@ if(!empty($raw)) {
       }
       return $found;
     }
+    */
   }
   
   public function special_filter_for_key(&$row,$k /* key */,$v /* special filter */) {
