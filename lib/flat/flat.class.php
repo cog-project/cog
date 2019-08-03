@@ -48,6 +48,7 @@ if(!empty($raw)) {
     return false;
   }
   public function get_match_rows($data,$key) {
+    $okey = $key;
     if(preg_match("/./",$key)) {
       $key = explode(".",$key);
       $ikey = array_shift($key);
@@ -56,18 +57,21 @@ if(!empty($raw)) {
       $key = [];
     }
     $out = [];
+    $match_row = [];
     foreach($data as $i => $row) {
       if(!isset($row[$ikey])) {
         continue;
       }
       $match_row = $row[$ikey];
       if(count($key)) {
-        $match = false;
+        $success = false;
         while(count($key)) {
           $k = array_shift($key);
           if(isset($match_row[$k])) {
-	    if(is_array($match_row[$k])) {
+	    if(is_array($match_row)) {
 	      $match_row = $match_row[$k];
+	    } else {
+	      break;
 	    }
 	    if(empty($key)) {
 	      $success = true;
@@ -79,11 +83,12 @@ if(!empty($raw)) {
 	  }
         }
       } else {
-        $match = true;
+        $success = true;
       }
-      if(!$match) continue;
+      if(!$success) continue;
       $out[$i] = $match_row;
     }
+    #cog::emit([__FUNCTION__,$out,$okey,reset($data)]);
     return $out;
   }
   public function filter_for_key(&$data,$key,$val) {
@@ -95,30 +100,18 @@ if(!empty($raw)) {
     }
   }
   public function exists($row,$k) {
-    $match_rows = $this->get_match_rows([$row],$k);
-    cog::emit($match_rows);
     if(!is_array($row)) {
       return false;
     }
-    cog::emit(func_get_args());
-    $matches = $this->get_match_rows([$row],$k);
-    cog::emit($matches);
     if(isset($row[$k])) {
       return true;
     }
-    /*
-    else {
-      $found = false;
-      foreach($row as $rk => $rv) {
-        $result = $this->exists($rv,$k);
-        if($result) {
-          $found = true;
-          break;
-        }
-      }
-      return $found;
+    $matches = $this->get_match_rows([$row],$k);
+    if(count($matches)) {
+      return true;
+    } else {
+      return false;
     }
-    */
   }
   
   public function special_filter_for_key(&$row,$k /* key */,$v /* special filter */) {

@@ -117,7 +117,7 @@ trait mongoTests {
 		$db = $network->getDbClient();
 		$data = $db->dbQuery("cogTest.blocks",['request.action' => ['$exists'=>true]]);
 		$this->assertTrue(count($data) > 0);
-		$empty = $db->dbQuery("cogTest.blocks",['request.action' => ['$exists'=>true]]);
+		$empty = $db->dbQuery("cogTest.blocks",['request.action' => ['$exists'=>false]]);
 		$this->assertTrue(count($empty) == 0);
 		
 		$creditInfo = $network->getCreditInfo($wallet->getAddress());
@@ -136,6 +136,7 @@ trait mongoTests {
 			
 			$add = [
 				# for $or
+				'action' => 'send',
 				'key_a' => $rand0,
 				'key_b' => $rand0,
 				# for nested
@@ -180,10 +181,10 @@ trait mongoTests {
 
 		### TEST 3 - $exists ###
 		$queries = [
-			['key_c'=>['$exists' => true]],
-			['key_c'=>['$exists' => false]],
-			['key_d'=>['$exists' => true]],
-			['key_d'=>['$exists' => false]],
+			['request.key_c'=>['$exists' => true]],
+			['request.key_c'=>['$exists' => false]],
+			['request.key_d'=>['$exists' => true]],
+			['request.key_d'=>['$exists' => false]],
 		];
 		foreach($queries as $q) {
 			# query result
@@ -191,14 +192,16 @@ trait mongoTests {
 
 			$keys = array_keys($q);
 			$k = reset($keys);
+			$ksplit = explode(".",$k);
+			$check_key = array_pop($ksplit);
 			$v = $q[$k]['$exists'];
 
 			# validate results against query
 			foreach($res as $row) {
 				if($v) {
-					$this->assertTrue(isset($row['request'][$k]),"Failed to find '$k' in ".print_r($row,1));
+					$this->assertTrue(isset($row['request'][$check_key]),"Failed to find '$check_key' in ".print_r($row,1));
 				} else {
-					$this->assertFalse(isset($row['request'][$k]),"Found '$k' in ".print_r($row,1));
+					$this->assertFalse(isset($row['request'][$check_key]),"Found '$check_key' in ".print_r($row,1));
 				}
 			}
 		}
