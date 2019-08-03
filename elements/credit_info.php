@@ -117,11 +117,11 @@ foreach($agg as $input) {
       ?>
       <tr>
         <td>
-	    <b><?=$nodeNames[$addr] ? : 'N/A'?></b>
+	    <?=$nodeNames[$addr] ? : 'N/A'?>
 	</td>
         <td>
 	  <a href='?transaction_history=<?=$addr?>'>
-          <?=$addr?>
+            <b><?=$addr?></b>
 	  </a>
         </td>
         <td>Credit</td>
