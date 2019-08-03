@@ -16,10 +16,8 @@ class flat {
 if(!empty($raw)) {
 #cog::emit("Queried:\n".print_r([$db,$collection,$query,$opts,$raw],1));
 }
-cog::emit($query);
-    foreach($query as $cond) {
-      $this->filter($raw,$cond);
-    }
+#cog::emit(['full_query:',$query]);
+    $this->filter($raw,$query);
     if($collection == 'endpoints') {
     #cog::emit("Query: ".print_r($query,1)."\nResult: ".print_r($raw,1)."\n".print_r(debug_backtrace(),1));
     }
@@ -49,22 +47,100 @@ cog::emit($query);
     }
     return false;
   }
-  public function filter_for_key(&$data,$key,$val) {
+  public function get_match_rows($data,$key) {
+    $okey = $key;
+    if(preg_match("/./",$key)) {
+      $key = explode(".",$key);
+      $ikey = array_shift($key);
+    } else {
+      $ikey = $key;
+      $key = [];
+    }
+    $out = [];
+    $match_row = [];
     foreach($data as $i => $row) {
-      if(!isset($row[$key])) {
+      if(!isset($row[$ikey])) {
         continue;
       }
-      if($this->should_filter($row[$key],$val)) {
-        unset($data[$i]);
+      $match_row = $row[$ikey];
+      if(count($key)) {
+        $success = false;
+        while(count($key)) {
+          $k = array_shift($key);
+          if(isset($match_row[$k])) {
+	    if(is_array($match_row)) {
+	      $match_row = $match_row[$k];
+	    } else {
+	      break;
+	    }
+	    if(empty($key)) {
+	      $success = true;
+	    } elseif (!is_array($match_row) && count($key)) {
+	      break;
+	    }
+	  } else {
+	    break;
+	  }
+        }
+      } else {
+        $success = true;
+      }
+      if(!$success) continue;
+      $out[$i] = $match_row;
+    }
+    #cog::emit([__FUNCTION__,$out,$okey,reset($data)]);
+    return $out;
+  }
+  public function filter_for_key(&$data,$key,$val) {
+    $matches = $this->get_match_rows($data,$key);
+    foreach($matches as $i => $match_row) {
+      if($this->should_filter($match_row,$val)) {
+         unset($data[$i]);
       }
     }
   }
+  public function exists($row,$k) {
+    if(!is_array($row)) {
+      return false;
+    }
+    if(isset($row[$k])) {
+      return true;
+    }
+    $matches = $this->get_match_rows([$row],$k);
+    if(count($matches)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  public function special_filter_for_key(&$row,$k /* key */,$v /* special filter */) {
+#  cog::emit(array_merge([__FUNCTION__],func_get_args()));
+    $keys = array_keys($v);
+    $key = reset($keys);
+    $val = $v[$key];
+    switch($key) {
+      case '$exists':
+        $found = $this->exists($row,$k);
+        return $val != $found;
+    }
+  }
+  
   public function filter(&$data,$query) {
     foreach($query as $k => $v) {
-    cog::emit([$k,$v,reset($data)]);
+#    cog::emit(['subquery:',$k,$v,reset($data)]);
       switch($k) {
         default:
-          $this->filter_for_key($data,$k,$v);
+	  if(is_array($v)) {
+	    foreach($data as $dk => $dv) {
+	      $shouldFilter = $this->special_filter_for_key($dv,$k,$v);
+	      if($shouldFilter) {
+	        unset($data[$dk]);
+	      }
+	    }
+	  } else {
+            $this->filter_for_key($data,$k,$v);
+	  }
           break;
       }
     }
@@ -219,11 +295,10 @@ cog::emit($query);
   }
   public function delete_multiple($db,$collection,$data) {
     foreach($data as $k => $v) {
-      $id = $v['_id'];
-      if(!empty($id)) {
-        $this->delete_one($db,$collection,$id);
+      if(isset($v['_id'])) {
+        $this->delete_one($db,$collection,$v['_id']);
       } else {
-        $rows = $this->query($db,$collection,$data);
+        $rows = $this->query($db,$collection,$v);
 	foreach($rows as $row) {
 	  $this->delete_one($db,$collection,$row['_id']);
 	}
