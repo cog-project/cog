@@ -18,9 +18,6 @@ if(!empty($raw)) {
 }
 #cog::emit(['full_query:',$query]);
     $this->filter($raw,$query);
-    if($collection == 'endpoints') {
-    #cog::emit("Query: ".print_r($query,1)."\nResult: ".print_r($raw,1)."\n".print_r(debug_backtrace(),1));
-    }
     return $raw;
   }
   public function should_filter($val,$criteria) {
@@ -47,7 +44,7 @@ if(!empty($raw)) {
     }
     return false;
   }
-  public function get_match_rows($data,$key) {
+  public function get_match_rows($data,$key,$return_field = false) {
     $okey = $key;
     if(preg_match("/./",$key)) {
       $key = explode(".",$key);
@@ -88,7 +85,6 @@ if(!empty($raw)) {
       if(!$success) continue;
       $out[$i] = $match_row;
     }
-    #cog::emit([__FUNCTION__,$out,$okey,reset($data)]);
     return $out;
   }
   public function filter_for_key(&$data,$key,$val) {
@@ -114,6 +110,10 @@ if(!empty($raw)) {
     }
   }
   
+  public function elem_match($rows,$subquery) {
+    $this->filter($rows,$subquery);
+    return $rows;
+  }
   public function special_filter_for_key(&$row,$k /* key */,$v /* special filter */) {
 #  cog::emit(array_merge([__FUNCTION__],func_get_args()));
     $keys = array_keys($v);
@@ -123,13 +123,41 @@ if(!empty($raw)) {
       case '$exists':
         $found = $this->exists($row,$k);
         return $val != $found;
+        break;
+      case '$elemMatch':
+        $match_rows = $this->get_match_rows([$row],$k);
+        $res = $this->elem_match($match_rows,$val);
+        break;
     }
   }
-  
+
   public function filter(&$data,$query) {
     foreach($query as $k => $v) {
 #    cog::emit(['subquery:',$k,$v,reset($data)]);
       switch($k) {
+        case '$or':
+        case '$and':
+          $matches = [];
+          $has_empty = false;
+          foreach ($v as $kk => $vv) {
+            foreach($data as $row) {
+            }
+            $data2 = $data;
+            $this->filter($data2,$vv);
+            if(empty($data2)) {
+              $has_empty = true;
+            } else {
+              $matches[] = $data2;
+            }
+          }
+          if($k == '$and' && $has_empty) {
+            $data = [];
+            // should delete
+          } elseif (!empty($matches)) {
+            // should not delete
+          }
+#          cog::emit([$matches,$data]);
+          break;
         default:
 	  if(is_array($v)) {
 	    foreach($data as $dk => $dv) {

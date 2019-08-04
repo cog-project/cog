@@ -121,7 +121,6 @@ trait mongoTests {
 		$this->assertTrue(count($empty) == 0);
 		
 		$creditInfo = $network->getCreditInfo($wallet->getAddress());
-		cog::emit($creditInfo);
 		$this->assertTrue(!empty($creditInfo));
 	}
 	public function testUpdateEndpoints($network = null,$addr = null) {
@@ -133,6 +132,8 @@ trait mongoTests {
 			$rand1a = rand(0,1);
 			$rand3 = rand();
 			$rand3a = rand(0,1);
+
+			if(empty($addr)) $addr = $rand1a ? $rand1 : $rand2;
 			
 			$add = [
 				# for $or
@@ -142,6 +143,10 @@ trait mongoTests {
 				# for nested
 				'params' => [
 					'recipient' => $rand1a ? $rand2 : $rand1,
+					'inputs' => [
+						'from' => $rand1a ? $addr : hash("sha256",rand()),
+						'to' => $rand1a ? hash("sha256",rand()) : $addr,
+					],
 				]
 			];
 			# for $exists;
@@ -150,7 +155,7 @@ trait mongoTests {
 			} else {
 				$add['key_d'] = $rand3;
 			}
-			$headers = cog::generate_header(null,0,$addr ? : $rand1a ? $rand1 : $rand2,false);
+			$headers = cog::generate_header(null,0,$addr,false);
 			$add = ['request' => $add];
 			$add['request']['headers'] = $headers;
 			$add['hash'] = cog::hash($add);
