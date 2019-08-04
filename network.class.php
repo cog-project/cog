@@ -183,7 +183,9 @@ class network {
 		$new_endpoints = $this->dbClient->queryByKey("{$this->db}.blocks",['processed'=>['$exists'=>false]]);
 		foreach($new_endpoints as $t) {
 			// preprocessing, may not be necessary
-			$t = json_decode(json_encode($t),true);
+			if(!is_array($t)) {
+				$t = json_decode(json_encode($t),true);
+			}
 			unset($t['_id']);
 			$exists = $this->endpointExists($t['hash']);
 

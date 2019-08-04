@@ -7,7 +7,7 @@ class MongoInterface {
 	}
 	public function exec($db,$cmd) {
 		$safe_db = escapeshellarg($db);
-		$safe_cmd = escapeshellarg($cmd);
+		$safe_cmd = escapeshellarg("printjson({$cmd});");
 		$full_cmd = "mongo --quiet --eval {$safe_cmd} {$safe_db}";
 		$res = shell_exec($full_cmd);
 		$out = json_decode($res,true);
@@ -77,7 +77,7 @@ class MongoInterface {
 				$cmd .= ".{$key}($val)";
 			}
 		}
-		$cmd = "$cmd.map(function(x){x._id = x._id.str; return x});";
+		$cmd = "$cmd.map(function(x){x._id = x._id.str; return x})";
 		$res = $this->exec($db,$cmd);
 		return $res;
 	}
