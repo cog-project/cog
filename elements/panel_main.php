@@ -49,9 +49,9 @@ foreach($cats as $k => $v) {
     </tr>
   <?php
     $its++;
-    if($its == 3) break;
+    if($its == 5) break;
   }
-  if(count($summary[$k]) > 3) { ?>
+  if(count($summary[$k]) > 5) { ?>
     <li style='list-style-type:none;'><a href=#>View More</a> (<?=count($summary[$k])?>)</li>
   <?php } ?>
 </table>
