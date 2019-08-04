@@ -102,6 +102,9 @@ foreach($agg as $input) {
     </table>
     </form>
     <h2>Available Credits</h2>
+    <?php if(empty($creditSummary)) { ?>
+      <i>There are currently no credits available.</i>
+    <?php } else { ?>
     <table class='view small'>
       <tr>
         <th>Nickname</th>
@@ -133,7 +136,11 @@ foreach($agg as $input) {
       }
       ?>
     </table>
+    <?php } ?>
     <h2>Outstanding Debts</h2>
+    <?php if(empty($creditSummary)) { ?>
+      <i>There are currently no outstanding debts on record.</i>
+    <?php } else { ?>
     <table class='view small'>
       <tr>
         <th>Nickname</th>
@@ -165,4 +172,5 @@ foreach($agg as $input) {
       }
       ?>
     </table>
+    <?php } ?>
   </details>
