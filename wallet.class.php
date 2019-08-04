@@ -137,7 +137,7 @@ class wallet {
 
 	public function listNodes() {
 		$req = new request('list_nodes');
-		$res = $req->submit('localhost',80);
+		$res = $req->submitLocal();
 		return $res['data'];
 	}
 
@@ -282,7 +282,7 @@ class wallet {
 			'database' => $this->getEnvironment(),
 			'hash' => $hash,
 		]);
-		$res = $req->submit(null,null,true);
+		$res = $req->submitLocal();
 		return $res['data'];
 	}
 
@@ -297,7 +297,7 @@ class wallet {
 			'address' => $this->party->getAddress(),
 			'public_key' => $this->party->getPublicKey()
 		]);
-		$res = $req->submit(null,null,true);
+		$res = $req->submitLocal();
 		return $res['data'];
 	}
 
