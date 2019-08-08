@@ -36,10 +36,10 @@ uasort($agg,function($a,$b) {
 foreach($agg as $input) {
   $other = null;
   if ($input['to'] == $client->getAddress()) {
-    $other = $input['from'];
+    $other = trim($input['from']);
     $amt = $input['amount'];
   } elseif ($input['from'] == $client->getAddress()) {
-    $other = $input['to'];
+    $other = trim($input['to']);
     $amt = -$input['amount'];
   } else {
     continue; // why
