@@ -1,5 +1,19 @@
 <?php
 trait mongoTests {
+	public function testInQuery() {
+		$network = $this->testNetwork();
+		$wallet = $this->testWallet();
+		$db = $network->getDbClient();
+		for($i = 0; $i < 10; $i++) {
+			$db->dbInsert("cogTest.blocks",[
+				'a' => $i
+			]);
+		}
+		$rows = $db->dbQuery("cogTest.blocks",[]);
+		$this->assertTrue(count($rows) == 10);
+		$rows = $db->dbQuery("cogTest.blocks",['a' => ['$in'=>[4,5,6]]]);
+		$this->assertTrue(count($rows) == 3);
+	}
 	public function testMultiDelete() {
 		$db = new dbClient();
 
