@@ -142,11 +142,13 @@ if(!empty($raw)) {
           $matches = [];
           $has_empty = false;
           foreach ($v as $kk => $vv) {
+            $res_rows = [];
             foreach($data as $row) {
+              $data2 = [$row];
+              $this->filter($data2,$vv);
+              $res_rows = $data2;
             }
-            $data2 = $data;
-            $this->filter($data2,$vv);
-            if(empty($data2)) {
+            if(empty($res_rows)) {
               $has_empty = true;
             } else {
               $matches[] = $data2;
