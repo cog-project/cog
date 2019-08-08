@@ -152,7 +152,13 @@ class node {
 				break;
 			case 'get_hash_history':
 				// TODO validate endpoints
+				if(!isset($params['params']['endpoints'])) {
+					throw new Exception("No endpoints were provided.");
+				}
 				// TODO validate startpoints
+				if(!isset($params['params']['startpoints'])) {
+					throw new Exception("No startpoints were provided.");
+				}
 				$end = $params['params']['endpoints'];
 				$start = $params['params']['startpoints'];
 				$data = $this->network->getHistory($start,$end);

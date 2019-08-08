@@ -115,7 +115,6 @@ if(!empty($raw)) {
     return $rows;
   }
   public function special_filter_for_key(&$row,$k /* key */,$v /* special filter */) {
-#  cog::emit(array_merge([__FUNCTION__],func_get_args()));
     $keys = array_keys($v);
     $key = reset($keys);
     $val = $v[$key];
@@ -127,6 +126,9 @@ if(!empty($raw)) {
       case '$elemMatch':
         $match_rows = $this->get_match_rows([$row],$k);
         $res = $this->elem_match($match_rows,$val);
+        break;
+      case '$in':
+        return !in_array($row[$k],$val);
         break;
     }
   }

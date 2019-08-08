@@ -121,7 +121,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			$req->setHeaders($params['headers']);
 		}
 		$res = $req->submit('localhost','80',false,true);
-		$this->assertTrue(strlen($res) > 0);
+		$this->assertTrue(strlen($res) > 0,"No response from localhost:80.");
 		$assoc = json_decode($res,true);
 		$this->assertTrue(is_array($assoc), $res);
 		$this->assertTrue(isset($assoc['result']));

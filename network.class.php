@@ -262,7 +262,7 @@ class network {
 				$hash = $t['hash'];
 				$transactions[$hash] = $t;
 				if(!isset($start[$hash]) && $hash != $zero) {
-					$end[$t['prevHash']] = true;
+					$end[$t['request']['headers']['prevHash']] = true;
 				}
 			}
 			$out = array_merge($out,$transactions);
