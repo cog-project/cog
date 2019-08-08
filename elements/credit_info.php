@@ -6,7 +6,9 @@ $creditTypes[$client->getAddress()] = "(You)";
 $nodes = $client->listNodes();
 $nodeNames = [];
 foreach($nodes as $node) {
-  $nodeNames[$node['address']] = $node['nickname'];
+  if(isset($node['nickname']) && strlen($node['nickname'])) {
+    $nodeNames[$node['address']] = $node['nickname'];
+  }
 }
 
 # TODO modularize credit summary generation
@@ -31,7 +33,6 @@ uasort($agg,function($a,$b) {
     return -1;
   }
 });
-
 foreach($agg as $input) {
   $other = null;
   if ($input['to'] == $client->getAddress()) {
@@ -40,7 +41,7 @@ foreach($agg as $input) {
   } elseif ($input['from'] == $client->getAddress()) {
     $other = $input['to'];
     $amt = -$input['amount'];
-  } elseif ($input['from'] == $input['to']) {
+  } else {
     continue; // why
   }
   if(!isset($creditSummary[$other])) {
@@ -56,7 +57,6 @@ foreach($agg as $input) {
     $creditSummary[$other]['timestamp'] = $input['timestamp'];
   }
 }
-
 # TODO the send form is going to get too wide, please break it into rows
 ?>
   <details <?=$_GET['expand'] == 'credit' ? 'open' : ''?>>
@@ -101,8 +101,16 @@ foreach($agg as $input) {
       </tr>
     </table>
     </form>
+    <?php
+    $credits = [];
+    $debts = [];
+    foreach($creditSummary as $addr => $data) {
+      if($data['amount'] > 0) $credits[$addr] = $data;
+      elseif($data['amount'] < 0) $debts[$addr] = $data;
+    }
+    ?>
     <h2>Available Credits</h2>
-    <?php if(empty($creditSummary)) { ?>
+    <?php if(empty($credits)) { ?>
       <i>There are currently no credits available.</i>
     <?php } else { ?>
     <table class='view small'>
@@ -115,12 +123,12 @@ foreach($agg as $input) {
         <th>Last Transaction</th>
       </tr>
       <?php
-      foreach($creditSummary as $addr => $data) {
+      foreach($credits as $addr => $data) {
 	if($data['amount'] <= 0) continue;
       ?>
       <tr>
         <td>
-	    <?=$nodeNames[$addr] ? : 'N/A'?>
+	  <?=$nodeNames[$addr] ? : 'N/A'?>
 	</td>
         <td>
 	  <a href='?transaction_history=<?=$addr?>'>
@@ -138,7 +146,7 @@ foreach($agg as $input) {
     </table>
     <?php } ?>
     <h2>Outstanding Debts</h2>
-    <?php if(empty($creditSummary)) { ?>
+    <?php if(empty($debts)) { ?>
       <i>There are currently no outstanding debts on record.</i>
     <?php } else { ?>
     <table class='view small'>
@@ -151,7 +159,7 @@ foreach($agg as $input) {
         <th>Last Transaction</th>
       </tr>
       <?php
-      foreach($creditSummary as $addr => $data) {
+      foreach($debts as $addr => $data) {
 	if($data['amount'] >= 0) continue;
       ?>
       <tr>
