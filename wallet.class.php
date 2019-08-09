@@ -67,9 +67,6 @@ class wallet {
 	}
 
 	public function sync($data) {
-		// add node if it isn't already listed
-		$this->addNode($data);
-
 		// condense db to endpoints and retrieve current
 		$req = new request('get_endpoints');
 		$response = $req->submitLocal();
@@ -82,6 +79,22 @@ class wallet {
 		$port = $data['ip_port'];
 
 		$response = $req->submit($ip,$port);
+
+		// add node if it isn't already listed
+		# TODO please begin to return all responses with address, pkey, signature, timestamp
+		if(isset($response['time']) && !empty($response['data'])) {
+			$data = [
+				'ip_address' => $ip,
+				'ip_port' => $port,
+				# address
+				# public_key
+				'ping_datetime' => cog::get_timestamp(),
+				# local_datetime
+				'request_time' => $response['time']
+			];
+			$this->addNode($data);
+		}
+
 		$remote_endpoints = $response['data'];
 
 		// convert remote endpoints to hashes

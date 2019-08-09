@@ -272,14 +272,25 @@ class network {
 	}
 
 	public function addNode($data) {
-		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
+		$res = $this->dbClient->queryByKey(
+			"{$this->db}.nodes",
+			[
+				'ip_address' => $data['ip_address'],
+				'ip_port' => $data['ip_port']
+			]
+		);
 		if(count($res)) {
 			$first = reset($res);
-			$data['_id'] = $first['_id'];
-			if(empty($data['ping_datetime'])) {
-				$data['ping_datetime'] = $first['ping_datetime'];
+			foreach($data as $k=> $v) {
+				$first[$k] = $v;
 			}
-			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data,['ip_address'=>$data['ip_address'],'ip_port'=>$data['ip_port']]);
+			$res = $this->dbClient->dbUpdate(
+				"{$this->db}.nodes",
+				$first,
+				[
+					'ip_address' => $data['ip_address'],
+					'ip_port' => $data['ip_port']
+				]);
 		} else {
 			$res = $this->dbClient->dbInsert("{$this->db}.nodes",$data);
 		}
