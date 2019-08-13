@@ -157,7 +157,7 @@ class node {
 				}
 				// TODO validate startpoints
 				if(!isset($params['params']['startpoints'])) {
-					throw new Exception("No startpoints were provided.");
+					$params['params']['startpoints'] = [];
 				}
 				$end = $params['params']['endpoints'];
 				$start = $params['params']['startpoints'];
