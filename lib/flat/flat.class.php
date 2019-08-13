@@ -128,7 +128,15 @@ if(!empty($raw)) {
         $res = $this->elem_match($match_rows,$val);
         break;
       case '$in':
-        return !in_array($row[$k],$val);
+        $match_rows = $this->get_match_rows([$row],$k);
+	foreach($match_rows as $v) {
+	  if(!in_array($v,$val)) return true;
+	}
+	return false;
+	# error_log(print_r(['val'=>$val,'match_rows'=>$match_rows,'[row]'=>[$row],'k'=>$k],1));
+	# return !count($match_rows);
+	# return !in_array($val,$match_rows);
+	# return !in_array($row[$k],$val);
         break;
     }
   }
