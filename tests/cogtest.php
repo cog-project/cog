@@ -216,6 +216,20 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			'action' => 'validate_address',
 			'params' => ['address' => $party->getAddress()],
 		],true);
+
+		$this->assertTrue($res['result'] == 1,print_r($res,1));
+
+		$network = $this->testNetwork();
+		$db = $network->getDbClient();
+		$rows = $db->dbQuery("cogTest.blocks",[]);
+		$this->assertTrue(!empty($rows),"cogTest.blocks is not empty.");
+
+		# simulate query in network::hasAddress();
+		$rows = $db->queryByKey("cogTest.blocks",[
+			'request.action' => 'invite',
+			'request.params.address' => ['$in' => [$wallet->getAddress()]]
+		]);
+
 		$this->assertTrue(isset($res['data']));
 		$this->assertTrue(strlen($res['data']) > 0,"Resultant data is empty.  Result:\n".print_r($res,1));
 	}
