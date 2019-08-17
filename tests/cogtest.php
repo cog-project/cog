@@ -161,7 +161,8 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			'params' => [
 				'inputs' => [
 					'from' => $a->getAddress(),
-					'to' => $b->getAddress()
+					'to' => $b->getAddress(),
+					'amount' => 
 				]
 			]
 		],false);
