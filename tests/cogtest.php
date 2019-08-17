@@ -145,9 +145,42 @@ class CogTest extends PHPUnit\Framework\TestCase {
 				emit($res);
 			}
 			$this->assertTrue(is_array($res),"Result is not an array. (".print_r($res,1).")");
-			$this->assertTrue(!empty($res['result']) == $bool);
+			$this->assertTrue(!empty($res['result']) == $bool,"Result flag does not match expected bool '$bool'.  Result:".print_r($res,1));
 			return $res;
 		}
+	}
+
+	function testSignContract() {
+		$a = $this->testWallet(); // Party A
+		$b = $this->testWallet(); // Party B
+		$c = $this->testWallet(); // Guarantor
+		$d = $this->testWallet(); // Arbitrator
+		
+		$res = $this->testValidateRequest([
+			'action' => 'contract',
+			'params' => [
+				'inputs' => [
+					[
+						'from' => $a->getAddress(),
+						'to' => $b->getAddress(),
+						'amount' => 10,
+						'message' => 'do a barrel roll',
+					],
+					[
+						'from' => $a->getAddress(),
+						'to' => $c->getAddress(),
+						'amount' => 1,
+						'role' => 'arbitrator',
+					],
+					[
+						'from' => $a->getAddress(),
+						'to' => $d->getAddress(),
+						'amount' => 1,
+						'role' => 'guarantor',
+					]
+				],
+			],
+		]);
 	}
 
 	function testSignature() {
@@ -217,7 +250,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 			'params' => ['address' => $party->getAddress()],
 		],true);
 		$this->assertTrue(isset($res['data']));
-		$this->assertTrue(strlen($res['data']) > 0,"Resultant data is empty.  Result:\n".print_r($res,1));
+		$this->assertTrue(strlen($res['data']) > 0,"Resultant data is empty.\nAddress:{$party->getAddress()}\nResult:\n".print_r($res,1));
 	}
 
 	# testValidateAddrRequest, with signature verification under a microscope.
@@ -236,6 +269,13 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$res = $req->submitLocal();
 		$this->assertTrue(isset($res['result']),"'result' field not found in result array:\n".print_r($res,1)."\nfor request:\n".print_r($req,1));
 		$this->assertTrue($res['result'] == 1,print_r($res,1));
+	}
+
+	function testStandaloneServer() {
+		for($port = 81; $port < 4096; $port++) {
+			cog::emit("Attempting to create process for port {$port}...");
+#			passthru("php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port}");
+		}
 	}
 	
 	function testSmoke($terms = array()) {
