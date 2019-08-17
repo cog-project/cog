@@ -44,7 +44,7 @@ if($client->hasParty()) {
 		$client->getEnvironment(),
 		$client->getAddress()
 	) ? : [];
-	$creditInfo = $client->getCreditInfo(
+	$creditInfo = $client->getCreditSummary(
 		$client->getEnvironment(),
 		$client->getAddress()
 	);

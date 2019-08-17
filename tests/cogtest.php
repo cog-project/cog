@@ -150,6 +150,23 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		}
 	}
 
+	public function testSend() {
+		$a = $this->testWallet();
+		$b = $this->testWallet();
+		$this->testValidateAddrRequest([
+			'action' => 'send'
+		],false);
+		$this->testValidateAddrRequest([
+			'action' => 'send',
+			'params' => [
+				'inputs' => [
+					'from' => $a->getAddress(),
+					'to' => $b->getAddress()
+				]
+			]
+		],false);
+	}
+
 	function testSignContract() {
 		$a = $this->testWallet(); // Party A
 		$b = $this->testWallet(); // Party B
@@ -201,74 +218,6 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(sha1($enc1) == sha1($enc2));
 		$verify = cog::verify_signature($enc2,$sig1,$req['pkey']);
 		$this->assertTrue($verify == 1,"Failed to verify signature.");
-	}
-
-	function testValidateAddrRequest() {
-		$wallet = $this->testWallet();
-		$party = cog::get_wallet()->getParty();
-
-		# validate_address - no action
-		$this->testValidateRequest([
-			'blah',
-		],false);
-
-		# validate_address - no params
-		$this->testValidateRequest([
-			'action' => 'validate_address'
-		],false);
-
-		# validate_address - invalid action
-		$this->testValidateRequest([
-			'action' => 'blah',
-			'params' => '909090909',
-		],false);
-
-		# validate_address - valid action, invalid address
-		$this->testValidateRequest([
-			'action' => 'validate_address',
-			'params' => ['address' => '909090909'],
-		],false);
-
-		# register - valid action, invalid address
-		$this->testValidateRequest([
-			'action' => 'invite',
-			'params' => ['address' => '909090909'],
-		],false);
-		
-		# register - valid action, valid address, invalid pkey
-		$res = $this->testValidateRequest([
-			'action' => 'invite',
-			'params' => ['address' => $party->getAddress()],
-		],false);
-
-		# register - valid action, valid address, valid pkey
-		$this->testAddrSig($party);
-
-		# validate_address - valid action, valid address
-		$res = $this->testValidateRequest([
-			'action' => 'validate_address',
-			'params' => ['address' => $party->getAddress()],
-		],true);
-		$this->assertTrue(isset($res['data']));
-		$this->assertTrue(strlen($res['data']) > 0,"Resultant data is empty.\nAddress:{$party->getAddress()}\nResult:\n".print_r($res,1));
-	}
-
-	# testValidateAddrRequest, with signature verification under a microscope.
-	function testAddrSig($party = null) {
-		if(!is_object($party)) {
-			$wallet = $this->testWallet();
-			$party = $wallet->getParty();
-		}
-		$req = new request('invite');
-		$req->setHeaders(cog::generate_header(cog::generate_zero_hash(),rand(),$party->getAddress(),false));
-		$req->setParams([
-			'address' => $party->getAddress(),
-			'public_key' => $party->getPublicKey()
-		]);
-		
-		$res = $req->submitLocal();
-		$this->assertTrue(isset($res['result']),"'result' field not found in result array:\n".print_r($res,1)."\nfor request:\n".print_r($req,1));
-		$this->assertTrue($res['result'] == 1,print_r($res,1));
 	}
 
 	function testStandaloneServer() {

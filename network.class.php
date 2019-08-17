@@ -152,30 +152,12 @@ class network {
 		if(!count($contract->getParties()) && $len) {
 			throw new Exception("There are no parties associated with this contract.");
 		}
-		$invalid = $this->getInvalidAddresses($contract->getParties());
-		if(count($invalid)) {
-			throw new Exception("This contract contains invalid addresses listed as parties:\n'".implode("'\n",$invalid));
-		}
-		if($invalid = !$this->hasAddress($contract->getCreator()) && $len) {
-			throw new Exception("This contract contains an invalid creator address:\n'".$contract->getCreator()."'");
-		}
 		if($len) {
 			$ver = $this->verifySignature($contract,$contract->getCreatorSignature(),$contract->getCreator());
 			if(!$ver) {
 				throw new Exception("Failed to verify signature for contract.\nContract: {$contract->toString()}\nHash: {$contract->getHash()}");
 			}
 		}
-	}
-	public function getInvalidAddresses($parties = []) {
-		if(!is_array($parties)) {
-			$parties = [$parties];
-		}
-		$res = $this->dbClient->queryByKey("{$this->db}.{$this->collection}",['terms.action'=>'invite','terms.params.address'=>$parties]);
-		return array();
-	}
-	public function getNumAddresses() {
-	# TODO test
-		return $this->dbClient->getCount("{$this->db}.{$this->collection}",['terms.action'=>'invite']);
 	}
 
 	public function updateEndpoints() {
@@ -305,16 +287,6 @@ class network {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",[]);
 		return $res;
 	}
-	public function hasAddress($parties = []) {
-		if(!is_array($parties)) {
-			$parties = [$parties];
-		}
-		$res = $this->dbClient->queryByKey(
-			"{$this->db}.{$this->collection}",
-			['request.action'=>'invite','request.params.address'=>['$in' => $parties]]
-		);
-		return count($res) == count($parties) ? true : false;
-	}
 	public function validateContractAction($contract) {
 		$data = $contract->__toArray();
 		if(!isset($data['terms']) || empty($data['terms'])) {
@@ -325,6 +297,7 @@ class network {
 			throw new Exception("Please specify an action.");
 		}
 		switch($terms['action']) {
+// TODO rewrite
 			case 'invite':
 				if($this->length() && empty($data['parties'])) {
 					throw new Exception("No inviting party has been specified.");
@@ -525,23 +498,6 @@ class network {
 	
 	public function edit($data_addr,$data) {
 		$this->contracts[$data_addr] = $data;
-	}
-
-	public function getParty($partyAddr) {
-		$rows = $this->dbClient->queryByKey("{$this->db}.{$this->collection}",[
-			"terms.action" => "invite",
-			"terms.params.address" => "$partyAddr",
-		]);
-		if(empty($rows)) {
-			throw new Exception("No address registration for '{$partyAddr}' was found.");
-		}
-		$row = array_shift($rows);
-		$pkey = $row->terms->params->public_key;
-
-		$party = new Party(false);
-		$party->setAddress($partyAddr);
-		$party->setPublicKey($pkey);
-		return $party;
 	}
 
 	public function getContract($hash) {

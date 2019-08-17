@@ -14,49 +14,7 @@ foreach($nodes as $node) {
 # TODO modularize credit summary generation
 # TODO this really should be in mongo...
 
-$creditSummary = [];
-$agg = [];
-
-foreach($creditInfo as $transaction) {
-  foreach($transaction['request']['params']['inputs'] as $input) {
-    $agg[] = $input + ['timestamp' => $transaction['request']['headers']['timestamp']];
-  }
-}
-
-uasort($agg,function($a,$b) {
-  # -1 first for asc; 1 first for desc
-  if(strtotime($a['timestamp'] == strtotime($b['timestamp']))) {
-    return 0;
-  } elseif (strtotime($a['timestamp'] < strtotime($b['timestamp']))) {
-    return 1;
-  } else {
-    return -1;
-  }
-});
-foreach($agg as $input) {
-  $other = null;
-  if ($input['to'] == $client->getAddress()) {
-    $other = trim($input['from']);
-    $amt = $input['amount'];
-  } elseif ($input['from'] == $client->getAddress()) {
-    $other = trim($input['to']);
-    $amt = -$input['amount'];
-  } else {
-    continue; // why
-  }
-  if(!isset($creditSummary[$other])) {
-    $creditSummary[$other] = $input;
-    $creditSummary[$other]['amount'] = $amt;
-    unset($creditSummary['to']);
-    unset($creditSummary['from']);
-  } else {
-    $creditSummary[$other]['amount'] += $amt;
-    if(!empty($input['message'])) {
-      $creditSummary[$other]['message'] = $input['message'];
-    }
-    $creditSummary[$other]['timestamp'] = $input['timestamp'];
-  }
-}
+$creditSummary = $creditInfo;
 # TODO the send form is going to get too wide, please break it into rows
 ?>
   <details <?=$_GET['expand'] == 'credit' ? 'open' : ''?>>

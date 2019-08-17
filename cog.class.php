@@ -3,6 +3,7 @@ class cog {
 	static $version = '0.0.4';
 	static $wallet = null;
 	static $environment = 'cog';
+	static $dbClient = null;
 
 	static function hash($x) {
 		if(is_array($x)) {

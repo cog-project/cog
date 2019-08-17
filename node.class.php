@@ -58,25 +58,10 @@ class node {
 		$this->network->setDb($params['environment']);
 		
 		switch($params['action']) {
-			case 'validate_address':
-				$this->validateAddress($params);
-				$data = $this->network->hasAddress([$params['params']['address']]);
-				break;
-			case 'invite':
-				$this->validateAddress($params);
-				$this->validatePublicKey($params);
-				if($this->network->hasAddress([$params['params']['address']])) {
-					throw new Exception("The specified address has already been registered with the network.");
-				}
-				$this->validateSignature($params);
-				$res = $this->network->put($params);
-				break;
-			case 'address_count':
-				$this->validateAddress($params);
-				$data = $this->network->getNumAddresses();
-				break;
 			case 'blocks_count':
 				$data = $this->network->length();
+				break;
+			case 'contract':
 				break;
 			case 'message':
 				# public key or at least signature should match header address btw

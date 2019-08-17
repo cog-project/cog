@@ -3,8 +3,24 @@ class dbClient {
 	protected $client = null;
 
 	public function __construct() {
-		#$this->client = new MongoInterface();
+		$check = trim(shell_exec("mongo --version"));
+		if(strlen($check)) {
+			$this->client = new MongoInterface();
+		} else {
+			$this->client = new FlatInterface();
+		}
+		# override
 		$this->client = new FlatInterface();
+	}
+
+	public function getDbClient() {
+		if(empty(cog::$dbClient)) {
+			return $this->client;
+		} elseif (cog::$dbClient == 'mongo') {
+			return new MongoInferface(); # TODO static
+		} elseif (cog::$dbClient == 'flat') {
+			return new FlatInterface(); #TODO static
+		}
 	}
 
 	public function queryByKey($table,$key = []) {
@@ -17,15 +33,15 @@ class dbClient {
 	}
 
 	public function dbCollection($db,$cmd) {
-		return $this->client->executeCommand($db,$cmd);
+		return $this->getDbClient()->executeCommand($db,$cmd);
 	}
 
 	public function dbCommand($db,$cmd) {
-		return $this->client->executeCommand($db,$cmd);
+		return $this->getDbClient()->executeCommand($db,$cmd);
 	}
 
 	public function dbQuery($db,$key,$opts = []) {
-		$res = $this->client->executeQuery($db,$key,$opts);
+		$res = $this->getDbClient()->executeQuery($db,$key,$opts);
 		return $res;
 	}
 
@@ -33,13 +49,13 @@ class dbClient {
 		$this->dbDeleteMultiple($table,[$key]);
 	}
 	public function dbDeleteMultiple($table,$data) {
-		$this->client->deleteMultiple($table,$data);
+		$this->getDbClient()->deleteMultiple($table,$data);
 	}
 	public function dbInsert($db,$key) {
 		return $this->dbInsertMultiple($db,[$key]);
 	}
 	public function dbInsertMultiple($db,$key = []) {
-		$res = $this->client->insertMultiple($db,$key);
+		$res = $this->getDbClient()->insertMultiple($db,$key);
 		return $res;
 	}
 	
@@ -47,7 +63,7 @@ class dbClient {
 		return $this->dbUpdateMultiple($db,[$key],$filter);
 	}
 	public function dbUpdateMultiple($db,$key = [], $filter = []) {
-		$res = $this->client->updateMultiple($db,$key,$filter);
+		$res = $this->getDbClient()->updateMultiple($db,$key,$filter);
 		return $res;
 	}
 

@@ -162,15 +162,4 @@ class request {
 		// bad bad not good
 	}
 }
-
-class inviteRequest extends request {
-	public function __construct() {
-		parent::__construct("invite");
-	}
-	public function toArray() {
-		$array = [
-		];
-		return array_merge(parent::toArray(),$array);
-	}
-}
 ?>
