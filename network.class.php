@@ -83,21 +83,32 @@ class network {
 	public function getSummary($address) {
 		$res = $this->dbClient->queryByKey(
 			"{$this->db}.{$this->collection}",
-			[ '$or' =>
+			[ '$and' =>
 				[
-					# Tentative - Transactions created by user
-					['request.headers.address' => $address],
+					['$or' => [
+						# Tentative - Transactions created by user
+						['request.headers.address' => $address],
 
-					# Append this with other message types please
+						# Append this with other message types please
 					
-					# Messages
-					['request.params.recipient' => $address]
-					# Disputed
-					# Outstanding
-					# Requests
-					# Pending
-					# Active
-					# Completed
+						# Messages
+						# Disputed
+						# Outstanding
+						# Requests
+						# Pending
+						# Active
+						# Completed
+						
+						# Address mentioned as either a sender or receiver.
+						['request.params.inputs' =>
+							['$elemMatch' =>
+								['$or' => [
+									['from' => $address],
+									['to' => $address]
+								]]
+							]
+						]
+					]],
 				]
 			]
 		);
