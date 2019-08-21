@@ -145,9 +145,71 @@ class CogTest extends PHPUnit\Framework\TestCase {
 				emit($res);
 			}
 			$this->assertTrue(is_array($res),"Result is not an array. (".print_r($res,1).")");
-			$this->assertTrue(!empty($res['result']) == $bool);
+			$this->assertTrue(!empty($res['result']) == $bool,"Result flag does not match expected bool '$bool'.  Result:".print_r($res,1));
 			return $res;
 		}
+	}
+
+	public function testSend() {
+		$a = $this->testWallet();
+		$b = $this->testWallet();
+		$this->testValidateRequest([
+			'action' => 'send'
+		],false);
+		$this->testValidateRequest([
+			'action' => 'send',
+			'params' => [
+				'inputs' => [
+					'from' => $a->getAddress(),
+					'to' => $b->getAddress(),
+					'amount' => 10,
+					'message' => 'cogtest::testsend'
+				]
+			]
+		]);
+		$network = $this->testNetwork();
+		$db = $network->getDbClient();
+		$data = $db->dbQuery("cogTest.blocks",[]);
+		$this->assertTrue(count($data) == 1);
+	}
+
+	function testSignContract() {
+		$a = $this->testWallet(); // Party A
+		$b = $this->testWallet(); // Party B
+		$c = $this->testWallet(); // Guarantor
+		$d = $this->testWallet(); // Arbitrator
+
+		$network = $this->testNetwork();
+		$db = $network->getDbClient();
+		
+		$res = $this->testValidateRequest([
+			'action' => 'contract',
+			'params' => [
+				'inputs' => [
+					[
+						'from' => $a->getAddress(),
+						'to' => $b->getAddress(),
+						'amount' => 10,
+						'message' => 'do a barrel roll',
+					],
+					[
+						'from' => $a->getAddress(),
+						'to' => $c->getAddress(),
+						'amount' => 1,
+						'role' => 'arbitrator',
+					],
+					[
+						'from' => $a->getAddress(),
+						'to' => $d->getAddress(),
+						'amount' => 1,
+						'role' => 'guarantor',
+					]
+				],
+			],
+		]);
+
+		$rows = $db->dbQuery("cogTest.blocks",['request.action'=>'contract']);
+		$this->assertTrue(count($rows) == 1);
 	}
 
 	function testSignature() {
@@ -170,86 +232,34 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue($verify == 1,"Failed to verify signature.");
 	}
 
-	function testValidateAddrRequest() {
-		$wallet = $this->testWallet();
-		$party = cog::get_wallet()->getParty();
-
-		# validate_address - no action
-		$this->testValidateRequest([
-			'blah',
-		],false);
-
-		# validate_address - no params
-		$this->testValidateRequest([
-			'action' => 'validate_address'
-		],false);
-
-		# validate_address - invalid action
-		$this->testValidateRequest([
-			'action' => 'blah',
-			'params' => '909090909',
-		],false);
-
-		# validate_address - valid action, invalid address
-		$this->testValidateRequest([
-			'action' => 'validate_address',
-			'params' => ['address' => '909090909'],
-		],false);
-
-		# register - valid action, invalid address
-		$this->testValidateRequest([
-			'action' => 'invite',
-			'params' => ['address' => '909090909'],
-		],false);
-		
-		# register - valid action, valid address, invalid pkey
-		$res = $this->testValidateRequest([
-			'action' => 'invite',
-			'params' => ['address' => $party->getAddress()],
-		],false);
-
-		# register - valid action, valid address, valid pkey
-		$this->testAddrSig($party);
-
-		# validate_address - valid action, valid address
-		$res = $this->testValidateRequest([
-			'action' => 'validate_address',
-			'params' => ['address' => $party->getAddress()],
-		],true);
-
-		$this->assertTrue($res['result'] == 1,print_r($res,1));
-
-		$network = $this->testNetwork();
-		$db = $network->getDbClient();
-		$rows = $db->dbQuery("cogTest.blocks",[]);
-		$this->assertTrue(!empty($rows),"cogTest.blocks is not empty.");
-
-		# simulate query in network::hasAddress();
-		$rows = $db->queryByKey("cogTest.blocks",[
-			'request.action' => 'invite',
-			'request.params.address' => ['$in' => [$wallet->getAddress()]]
-		]);
-
-		$this->assertTrue(isset($res['data']));
-		$this->assertTrue(strlen($res['data']) > 0,"Resultant data is empty.  Result:\n".print_r($res,1));
+	function testStandaloneServer() {
+		require_once("../lib/future/future.php");
+		$out = [];
+		for($port = 81; $port < 4096; $port++) {
+			cog::emit("Attempting to create process for port {$port}...\n");
+			$out['server'] = \future::start(
+				"passthru",
+				["php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port} 2>/dev/null"]
+			);
+			$out['port'] = $port;
+			sleep(1);
+			$json = @file_get_contents("http://localhost:$port/server.php");
+			$res = json_decode($json,true);
+			if(is_array($res)) break;
+		}
+		return $out;
 	}
 
-	# testValidateAddrRequest, with signature verification under a microscope.
-	function testAddrSig($party = null) {
-		if(!is_object($party)) {
-			$wallet = $this->testWallet();
-			$party = $wallet->getParty();
-		}
-		$req = new request('invite');
-		$req->setHeaders(cog::generate_header(cog::generate_zero_hash(),rand(),$party->getAddress(),false));
-		$req->setParams([
-			'address' => $party->getAddress(),
-			'public_key' => $party->getPublicKey()
-		]);
-		
-		$res = $req->submitLocal();
-		$this->assertTrue(isset($res['result']),"'result' field not found in result array:\n".print_r($res,1)."\nfor request:\n".print_r($req,1));
-		$this->assertTrue($res['result'] == 1,print_r($res,1));
+	function testMultiServer() {
+		require_once("../lib/future/future.php");
+		$a = $this->testStandaloneServer();
+		$b = $this->testStandaloneServer();
+
+		/* TODO:
+		- simulate multiple databases
+		- from there, we can have the servers add each other as peers, do a send request or several for one, and then have them synchronize.
+		-- with request to this it may be advisable to create server b after the request.
+		*/
 	}
 	
 	function testSmoke($terms = array()) {

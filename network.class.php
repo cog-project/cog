@@ -41,10 +41,6 @@ class network {
 		$collection = $opts['collection'];
 		$this->db = $db;
 		$this->collection = $collection;
-		
-		# TODO: exception handling
-
-		$this->getLastHash();
 	}
 	public function __construct() {
 		// We should be able to configure this later.
@@ -63,7 +59,10 @@ class network {
 		"{$this->db}.endpoints",
 		['$and' => [
 			# Always a Send Action
-			['request.action' => 'send'],
+			['$or' => [
+				['request.action' => 'send'],				
+				['request.action' => 'contract'],
+			]],
 			# Address mentioned as either a sender or receiver.
 			['request.params.inputs' =>
 				['$elemMatch' =>
@@ -80,7 +79,28 @@ class network {
 		return $out;
 	}
 	
-	public function getSummary($address) {
+	public function getSummary($address,$self_address = null) {
+		$res = $this->dbClient->queryByKey(
+		"{$this->db}.endpoints",
+		['$and' => [
+			# Always a Send Action
+			['$or' => [
+				['request.action' => 'send'],				
+				['request.action' => 'contract'],
+			]],
+			# Address mentioned as either a sender or receiver.
+			['request.params.inputs' =>
+				['$elemMatch' =>
+					['$or' => [
+							['from' => $address],
+							['to' => $address]
+						]
+					]
+				]
+			]
+		]]
+		);
+		/*
 		$res = $this->dbClient->queryByKey(
 			"{$this->db}.{$this->collection}",
 			[ '$and' =>
@@ -112,6 +132,7 @@ class network {
 				]
 			]
 		);
+		*/
 		$out = $this->groupForSummary($res);
 		return $out;
 	}
@@ -163,30 +184,12 @@ class network {
 		if(!count($contract->getParties()) && $len) {
 			throw new Exception("There are no parties associated with this contract.");
 		}
-		$invalid = $this->getInvalidAddresses($contract->getParties());
-		if(count($invalid)) {
-			throw new Exception("This contract contains invalid addresses listed as parties:\n'".implode("'\n",$invalid));
-		}
-		if($invalid = !$this->hasAddress($contract->getCreator()) && $len) {
-			throw new Exception("This contract contains an invalid creator address:\n'".$contract->getCreator()."'");
-		}
 		if($len) {
 			$ver = $this->verifySignature($contract,$contract->getCreatorSignature(),$contract->getCreator());
 			if(!$ver) {
 				throw new Exception("Failed to verify signature for contract.\nContract: {$contract->toString()}\nHash: {$contract->getHash()}");
 			}
 		}
-	}
-	public function getInvalidAddresses($parties = []) {
-		if(!is_array($parties)) {
-			$parties = [$parties];
-		}
-		$res = $this->dbClient->queryByKey("{$this->db}.{$this->collection}",['terms.action'=>'invite','terms.params.address'=>$parties]);
-		return array();
-	}
-	public function getNumAddresses() {
-	# TODO test
-		return $this->dbClient->getCount("{$this->db}.{$this->collection}",['terms.action'=>'invite']);
 	}
 
 	public function updateEndpoints() {
@@ -283,14 +286,25 @@ class network {
 	}
 
 	public function addNode($data) {
-		$res = $this->dbClient->queryByKey("{$this->db}.nodes",['ip_address' => $data['ip_address'], 'ip_port' => $data['ip_port']]);
+		$res = $this->dbClient->queryByKey(
+			"{$this->db}.nodes",
+			[
+				'ip_address' => $data['ip_address'],
+				'ip_port' => $data['ip_port']
+			]
+		);
 		if(count($res)) {
 			$first = reset($res);
-			$data['_id'] = $first['_id'];
-			if(empty($data['ping_datetime'])) {
-				$data['ping_datetime'] = $first['ping_datetime'];
+			foreach($data as $k=> $v) {
+				$first[$k] = $v;
 			}
-			$res = $this->dbClient->dbUpdate("{$this->db}.nodes",$data,['ip_address'=>$data['ip_address'],'ip_port'=>$data['ip_port']]);
+			$res = $this->dbClient->dbUpdate(
+				"{$this->db}.nodes",
+				$first,
+				[
+					'ip_address' => $data['ip_address'],
+					'ip_port' => $data['ip_port']
+				]);
 		} else {
 			$res = $this->dbClient->dbInsert("{$this->db}.nodes",$data);
 		}
@@ -305,16 +319,6 @@ class network {
 		$res = $this->dbClient->queryByKey("{$this->db}.nodes",[]);
 		return $res;
 	}
-	public function hasAddress($parties = []) {
-		if(!is_array($parties)) {
-			$parties = [$parties];
-		}
-		$res = $this->dbClient->queryByKey(
-			"{$this->db}.{$this->collection}",
-			['request.action'=>'invite','request.params.address'=>['$in' => $parties]]
-		);
-		return count($res) == count($parties) ? true : false;
-	}
 	public function validateContractAction($contract) {
 		$data = $contract->__toArray();
 		if(!isset($data['terms']) || empty($data['terms'])) {
@@ -325,6 +329,7 @@ class network {
 			throw new Exception("Please specify an action.");
 		}
 		switch($terms['action']) {
+// TODO rewrite
 			case 'invite':
 				if($this->length() && empty($data['parties'])) {
 					throw new Exception("No inviting party has been specified.");
@@ -443,28 +448,6 @@ class network {
 		*/
 	}
 
-	public function getLastHash($refresh = false) {
-		if(!strlen($this->lastHash) || $refresh) {
-			$table = "{$this->db}.{$this->collection}";
-			$res = $this->dbClient->dbQuery(
-				$table,
-				[],
-				[
-					'sort' => ['timestamp' => -1],
-					'limit' => 1,
-				]
-			);
-			# TODO get rid of this function
-			if(is_array($res) && count($res)) {
-				$latest = array_pop($res);
-				$this->lastHash = $latest['hash'];
-			} else {
-				$this->lastHash = $this->getZeroHash();
-			}
-		}
-		return $this->lastHash;
-	}
-
 	public function size() {
 		return $this->length();
 	}
@@ -525,23 +508,6 @@ class network {
 	
 	public function edit($data_addr,$data) {
 		$this->contracts[$data_addr] = $data;
-	}
-
-	public function getParty($partyAddr) {
-		$rows = $this->dbClient->queryByKey("{$this->db}.{$this->collection}",[
-			"terms.action" => "invite",
-			"terms.params.address" => "$partyAddr",
-		]);
-		if(empty($rows)) {
-			throw new Exception("No address registration for '{$partyAddr}' was found.");
-		}
-		$row = array_shift($rows);
-		$pkey = $row->terms->params->public_key;
-
-		$party = new Party(false);
-		$party->setAddress($partyAddr);
-		$party->setPublicKey($pkey);
-		return $party;
 	}
 
 	public function getContract($hash) {

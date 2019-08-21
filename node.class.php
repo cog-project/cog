@@ -58,23 +58,6 @@ class node {
 		$this->network->setDb($params['environment']);
 		
 		switch($params['action']) {
-			case 'validate_address':
-				$this->validateAddress($params);
-				$data = $this->network->hasAddress([$params['params']['address']]);
-				break;
-			case 'invite':
-				$this->validateAddress($params);
-				$this->validatePublicKey($params);
-				if($this->network->hasAddress([$params['params']['address']])) {
-					throw new Exception("The specified address has already been registered with the network.");
-				}
-				$this->validateSignature($params);
-				$res = $this->network->put($params);
-				break;
-			case 'address_count':
-				$this->validateAddress($params);
-				$data = $this->network->getNumAddresses();
-				break;
 			case 'blocks_count':
 				$data = $this->network->length();
 				break;
@@ -90,7 +73,7 @@ class node {
 				break;
 			case 'summary':
 				$this->validateAddress($params,'address');
-				$data = $this->network->getSummary($params['params']['address']);
+				$data = $this->network->getSummary($params['params']['address'],$params['headers']['address']);
 				break;
 			case 'view':
 				$this->validateHash($params,'hash');
@@ -177,6 +160,21 @@ class node {
 				break;
 			case 'credit_info':
 				$data = $this->network->getCreditInfo($params['params']['address']);
+				break;
+			case 'contract':
+				// validate
+				// put
+				$hash = cog::hash($params);
+				if(!$this->network->hasHash($hash)) {
+					$res = $this->network->put($params);
+					// TODO re-broadcast recommended
+					// TODO validate against existing data and endpoints, update endpoints
+				} else {
+					$res = null;
+				}
+				// 5. Update State - recalculate (safe) or just update incrementally (unsafe)
+				$data = $res;				
+				// TODO addendums for signatures, revisions, etc.
 				break;
 			case 'send':
 				// 1. Validate Address x Public Key - use RequestValidator

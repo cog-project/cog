@@ -1,6 +1,9 @@
 <?php
-require '../PHPWebserver/vendor/autoload.php';
-require '../future/future.php';
+require dirname(__FILE__).'/../PHPWebserver/src/Server.php';
+require dirname(__FILE__).'/../PHPWebserver/src/Response.php';
+require dirname(__FILE__).'/../PHPWebserver/src/Request.php';
+require dirname(__FILE__).'/../PHPWebserver/src/Exception.php';
+require dirname(__FILE__).'/../future/future.php';
 
 use ClanCats\Station\PHPServer\Server; 
 use ClanCats\Station\PHPServer\Request;

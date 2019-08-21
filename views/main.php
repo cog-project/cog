@@ -34,6 +34,9 @@ if(!empty($_POST)) {
 	if(isset($_POST['send'])) {
 		$client->send($_POST['send']);
 	}
+	if(isset($_POST['contract'])) {
+		$client->contract($_POST['contract']);
+	}
 }
 
 if($client->hasParty()) {
@@ -44,7 +47,7 @@ if($client->hasParty()) {
 		$client->getEnvironment(),
 		$client->getAddress()
 	) ? : [];
-	$creditInfo = $client->getCreditInfo(
+	$creditInfo = $client->getCreditSummary(
 		$client->getEnvironment(),
 		$client->getAddress()
 	);

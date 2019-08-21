@@ -67,9 +67,6 @@ class wallet {
 	}
 
 	public function sync($data) {
-		// add node if it isn't already listed
-		$this->addNode($data);
-
 		// condense db to endpoints and retrieve current
 		$req = new request('get_endpoints');
 		$response = $req->submitLocal();
@@ -82,6 +79,22 @@ class wallet {
 		$port = $data['ip_port'];
 
 		$response = $req->submit($ip,$port);
+
+		// add node if it isn't already listed
+		# TODO please begin to return all responses with address, pkey, signature, timestamp
+		if(isset($response['time']) && !empty($response['data'])) {
+			$data = [
+				'ip_address' => $ip,
+				'ip_port' => $port,
+				# address
+				# public_key
+				'ping_datetime' => cog::get_timestamp(),
+				# local_datetime
+				'request_time' => $response['time']
+			];
+			$this->addNode($data);
+		}
+
 		$remote_endpoints = $response['data'];
 
 		// convert remote endpoints to hashes
@@ -317,8 +330,73 @@ class wallet {
 		return $res['data'] ? : [];
 	}
 
+	public function getCreditSummary($env,$address) {
+		$creditInfo = $this->getCreditInfo($env,$address);
+
+		$creditSummary = [];
+		$agg = [];
+
+		foreach($creditInfo as $transaction) {
+		  foreach($transaction['request']['params']['inputs'] as $input) {
+		    $agg[] = $input + ['timestamp' => $transaction['request']['headers']['timestamp']];
+		  }
+		}
+
+		uasort($agg,function($a,$b) {
+		  # -1 first for asc; 1 first for desc
+		  if(strtotime($a['timestamp'] == strtotime($b['timestamp']))) {
+		    return 0;
+		  } elseif (strtotime($a['timestamp'] < strtotime($b['timestamp']))) {
+		    return 1;
+		  } else {
+		    return -1;
+		  }
+		});
+
+		foreach($agg as $input) {
+		  $other = null;
+		  if ($input['to'] == $this->getAddress()) {
+		    $other = trim($input['from']);
+		    $amt = $input['amount'];
+		  } elseif ($input['from'] == $this->getAddress()) {
+		    $other = trim($input['to']);
+		    $amt = -$input['amount'];
+		  } else {
+		    continue; // why
+		  }
+		  if(!isset($creditSummary[$other])) {
+		    $creditSummary[$other] = $input;
+		    $creditSummary[$other]['amount'] = $amt;
+		    unset($creditSummary['to']);
+		    unset($creditSummary['from']);
+		  } else {
+		    $creditSummary[$other]['amount'] += $amt;
+		    if(!empty($input['message'])) {
+		      $creditSummary[$other]['message'] = $input['message'];
+		    }
+		    $creditSummary[$other]['timestamp'] = $input['timestamp'];
+		  }
+		}
+		return $creditSummary;
+	}
+
 	public function getParty() {
 		return $this->party;
+	}
+
+	public function contract($data) {
+		$req = new request('contract');
+		$inputs = [];
+		foreach($data as $role => $input) {
+			$input['role'] = $role;
+			$inputs[] = $input;
+		}
+		$req->setParams(['inputs' => [$inputs]]);
+		// 1. validate.
+		// 2. broadcast
+		$res = $req->broadcast();
+		// 3. process response.
+		cog::emit($res);
 	}
 
 	public function send($data) {
