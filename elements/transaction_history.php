@@ -1,4 +1,5 @@
 <?php
+cog::emit($creditInfo);
 # TODO this REALLY should be in mongo...
 uasort($creditInfo,function($a,$b) {
   if (strtotime($a['request']['headers']['timestamp']) == strtotime($b['request']['headers']['timestamp'])) {

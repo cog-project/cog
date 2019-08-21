@@ -19,7 +19,13 @@ h2 {
     font-size:18px;
     color:#444;
 }
-
+textarea {
+    font-size:100%;
+}
+input[type="text"] {
+   font-size:100%;
+   width:400px;
+}
 details > h2 {
     border-bottom: 1px solid #DDD;
 }

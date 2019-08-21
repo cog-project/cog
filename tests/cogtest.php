@@ -153,19 +153,24 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	public function testSend() {
 		$a = $this->testWallet();
 		$b = $this->testWallet();
-		$this->testValidateAddrRequest([
+		$this->testValidateRequest([
 			'action' => 'send'
 		],false);
-		$this->testValidateAddrRequest([
+		$this->testValidateRequest([
 			'action' => 'send',
 			'params' => [
 				'inputs' => [
 					'from' => $a->getAddress(),
 					'to' => $b->getAddress(),
-					'amount' => 
+					'amount' => 10,
+					'message' => 'cogtest::testsend'
 				]
 			]
-		],false);
+		]);
+		$network = $this->testNetwork();
+		$db = $network->getDbClient();
+		$data = $db->dbQuery("cogTest.blocks",[]);
+		$this->assertTrue(count($data) == 1);
 	}
 
 	function testSignContract() {
@@ -173,6 +178,9 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$b = $this->testWallet(); // Party B
 		$c = $this->testWallet(); // Guarantor
 		$d = $this->testWallet(); // Arbitrator
+
+		$network = $this->testNetwork();
+		$db = $network->getDbClient();
 		
 		$res = $this->testValidateRequest([
 			'action' => 'contract',
@@ -199,6 +207,9 @@ class CogTest extends PHPUnit\Framework\TestCase {
 				],
 			],
 		]);
+
+		$rows = $db->dbQuery("cogTest.blocks",['request.action'=>'contract']);
+		$this->assertTrue(count($rows) == 1);
 	}
 
 	function testSignature() {
@@ -222,10 +233,33 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	}
 
 	function testStandaloneServer() {
+		require_once("../lib/future/future.php");
+		$out = [];
 		for($port = 81; $port < 4096; $port++) {
-			cog::emit("Attempting to create process for port {$port}...");
-#			passthru("php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port}");
+			cog::emit("Attempting to create process for port {$port}...\n");
+			$out['server'] = \future::start(
+				"passthru",
+				["php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port} 2>/dev/null"]
+			);
+			$out['port'] = $port;
+			sleep(1);
+			$json = @file_get_contents("http://localhost:$port/server.php");
+			$res = json_decode($json,true);
+			if(is_array($res)) break;
 		}
+		return $out;
+	}
+
+	function testMultiServer() {
+		require_once("../lib/future/future.php");
+		$a = $this->testStandaloneServer();
+		$b = $this->testStandaloneServer();
+
+		/* TODO:
+		- simulate multiple databases
+		- from there, we can have the servers add each other as peers, do a send request or several for one, and then have them synchronize.
+		-- with request to this it may be advisable to create server b after the request.
+		*/
 	}
 	
 	function testSmoke($terms = array()) {

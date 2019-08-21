@@ -41,10 +41,6 @@ class network {
 		$collection = $opts['collection'];
 		$this->db = $db;
 		$this->collection = $collection;
-		
-		# TODO: exception handling
-
-		$this->getLastHash();
 	}
 	public function __construct() {
 		// We should be able to configure this later.
@@ -63,7 +59,10 @@ class network {
 		"{$this->db}.endpoints",
 		['$and' => [
 			# Always a Send Action
-			['request.action' => 'send'],
+			['$or' => [
+				['request.action' => 'send'],				
+				['request.action' => 'contract'],
+			]],
 			# Address mentioned as either a sender or receiver.
 			['request.params.inputs' =>
 				['$elemMatch' =>
@@ -80,7 +79,28 @@ class network {
 		return $out;
 	}
 	
-	public function getSummary($address) {
+	public function getSummary($address,$self_address = null) {
+		$res = $this->dbClient->queryByKey(
+		"{$this->db}.endpoints",
+		['$and' => [
+			# Always a Send Action
+			['$or' => [
+				['request.action' => 'send'],				
+				['request.action' => 'contract'],
+			]],
+			# Address mentioned as either a sender or receiver.
+			['request.params.inputs' =>
+				['$elemMatch' =>
+					['$or' => [
+							['from' => $address],
+							['to' => $address]
+						]
+					]
+				]
+			]
+		]]
+		);
+		/*
 		$res = $this->dbClient->queryByKey(
 			"{$this->db}.{$this->collection}",
 			[ '$or' =>
@@ -101,6 +121,7 @@ class network {
 				]
 			]
 		);
+		*/
 		$out = $this->groupForSummary($res);
 		return $out;
 	}
@@ -414,28 +435,6 @@ class network {
 		- objs
 		- cmts
 		*/
-	}
-
-	public function getLastHash($refresh = false) {
-		if(!strlen($this->lastHash) || $refresh) {
-			$table = "{$this->db}.{$this->collection}";
-			$res = $this->dbClient->dbQuery(
-				$table,
-				[],
-				[
-					'sort' => ['timestamp' => -1],
-					'limit' => 1,
-				]
-			);
-			# TODO get rid of this function
-			if(is_array($res) && count($res)) {
-				$latest = array_pop($res);
-				$this->lastHash = $latest['hash'];
-			} else {
-				$this->lastHash = $this->getZeroHash();
-			}
-		}
-		return $this->lastHash;
 	}
 
 	public function size() {
