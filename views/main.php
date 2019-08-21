@@ -34,6 +34,9 @@ if(!empty($_POST)) {
 	if(isset($_POST['send'])) {
 		$client->send($_POST['send']);
 	}
+	if(isset($_POST['contract'])) {
+		$client->contract($_POST['contract']);
+	}
 }
 
 if($client->hasParty()) {

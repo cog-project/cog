@@ -61,8 +61,6 @@ class node {
 			case 'blocks_count':
 				$data = $this->network->length();
 				break;
-			case 'contract':
-				break;
 			case 'message':
 				# public key or at least signature should match header address btw
 				$this->validateAddress($params,'sender');
@@ -75,7 +73,7 @@ class node {
 				break;
 			case 'summary':
 				$this->validateAddress($params,'address');
-				$data = $this->network->getSummary($params['params']['address']);
+				$data = $this->network->getSummary($params['params']['address'],$params['headers']['address']);
 				break;
 			case 'view':
 				$this->validateHash($params,'hash');
@@ -162,6 +160,21 @@ class node {
 				break;
 			case 'credit_info':
 				$data = $this->network->getCreditInfo($params['params']['address']);
+				break;
+			case 'contract':
+				// validate
+				// put
+				$hash = cog::hash($params);
+				if(!$this->network->hasHash($hash)) {
+					$res = $this->network->put($params);
+					// TODO re-broadcast recommended
+					// TODO validate against existing data and endpoints, update endpoints
+				} else {
+					$res = null;
+				}
+				// 5. Update State - recalculate (safe) or just update incrementally (unsafe)
+				$data = $res;				
+				// TODO addendums for signatures, revisions, etc.
 				break;
 			case 'send':
 				// 1. Validate Address x Public Key - use RequestValidator

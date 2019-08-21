@@ -384,6 +384,21 @@ class wallet {
 		return $this->party;
 	}
 
+	public function contract($data) {
+		$req = new request('contract');
+		$inputs = [];
+		foreach($data as $role => $input) {
+			$input['role'] = $role;
+			$inputs[] = $input;
+		}
+		$req->setParams(['inputs' => [$inputs]]);
+		// 1. validate.
+		// 2. broadcast
+		$res = $req->broadcast();
+		// 3. process response.
+		cog::emit($res);
+	}
+
 	public function send($data) {
 		$req = new request('send');
 		$inputs = [
