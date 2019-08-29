@@ -248,34 +248,6 @@ class wallet {
 		$this->environment = $x;
 	}
 
-	public function register($database,$address,$publicKey) {
-		if(!$this->hasParty()) {
-			cog::emit("There is no party associated with this client."); #TODO logging
-			return;
-		}
-
-		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
-
-		$req = new request('invite');
-		$req->setHeaders($headers);
-		$req->setParams([
-			'database' => $database,
-			'address' => $address,
-			'public_key' => $publicKey,
-		]);
-		
-		$res = $req->submitLocal();
-
-		/* TODO:
-		- make this known to the network, or better, just stop doing it altogether.
-		-- in which case this entire part of the functionality should be eliminated.
-		*/
-		
-		if(!$res['result']) {
-			cog::emit($res['message']); #TODO logging
-		}
-	}
-
 	public function sign($data) {
 		if(!$this->hasParty()) {
 			throw new Exception('No party found.');
@@ -288,7 +260,7 @@ class wallet {
 		if(!$this->hasParty()) {
 			return;
 		}
-		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$this->getAddress(),false);
+		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$this->getAddress(),false,$this->getPublicKey());
 		$req = new request('view');
 		$req->setHeaders($headers);
 		$req->setParams([
@@ -303,7 +275,7 @@ class wallet {
 		if(!$this->hasParty()) {
 			return;
 		}
-		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
+		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false,$this->getPublicKey());
 		$req = new request('summary');
 		$req->setHeaders($headers);
 		$req->setParams([
@@ -319,7 +291,7 @@ class wallet {
 		if(!$this->hasParty()) {
 			return;
 		}
-		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false);
+		$headers = cog::generate_header(cog::generate_zero_hash(),rand(),$address,false,$this->getPublicKey());
 		$req = new request('credit_info');
 		$req->setHeaders($headers);
 		$req->setParams([

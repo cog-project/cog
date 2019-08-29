@@ -105,7 +105,8 @@ class request {
 				cog::generate_zero_hash(),
 				null,
 				cog::get_wallet()->getAddress(),
-				false
+				false,
+				cog::get_wallet()->getPublicKey()
 			);
 		}
 	}

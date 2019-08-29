@@ -217,6 +217,27 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(count($rows) == 1);
 	}
 
+	function testSignEmpty() {
+		$wallet = $this->testWallet();
+		$req = [
+			'pkey' => $wallet->getPublicKey(),
+			'params' => [1]
+		];
+		$sig1 = $wallet->sign(json_encode($req));
+
+		$enc1 = json_encode($req);
+		$req['signature'] = $sig1;
+		$req = json_decode(json_encode($req),true);
+		$sig2 = $req['signature'];
+		unset($req['signature']);
+
+		$enc2 = json_encode($req);
+
+		$this->assertTrue(sha1($enc1) == sha1($enc2));
+		$verify = cog::verify_signature($enc2,$sig1,$req['pkey']);
+		$this->assertTrue($verify == 1,"Failed to verify signature.");
+	}
+
 	function testSignature() {
 		$wallet = $this->testWallet();
 		$req = ['pkey'=>$wallet->getPublicKey()];
