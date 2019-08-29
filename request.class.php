@@ -39,7 +39,7 @@ class request {
 		return json_encode($this->toArray());
 	}
 	public function getParams() {
-		if(empty($this->params)) return [1];
+		if(empty($this->params)) return ["1"];
 		else return $this->params;
 	}
 	public function setParams($data) {
