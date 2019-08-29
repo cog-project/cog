@@ -96,6 +96,7 @@ class Server
 				if(\future::terminated($proc)) {
 					\future::wait($proc);
 					unset($procs[$i]);
+					\future::kill($proc);
 				}
 			}
 		}
