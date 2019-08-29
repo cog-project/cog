@@ -32,6 +32,7 @@ class cog {
 			'timestamp' => self::get_timestamp(),
 			'counter' => (string)$counter,
 			'address' => $address,
+			#'publicKey' => 'TODO',
 		];
 		if($json) {
 			return json_encode($header,JSON_PRETTY_PRINT);
