@@ -53,9 +53,10 @@ class node {
 	}
 	public function processAction($params) {
 		$data = null;
-				
+
 		# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
 		$this->network->setDb($params['environment']);
+		$this->validateSignature($params);
 		
 		switch($params['action']) {
 			case 'blocks_count':
