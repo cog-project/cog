@@ -25,14 +25,14 @@ class cog {
 		return $nonce;
 	}
 
-	static function generate_header($prevHash = null,$counter = 0,$address = null,$json = true) {
+	static function generate_header($prevHash = null,$counter = 0,$address = null,$json = true,$publicKey) {
 		$header = [
 			'version' => self::$version,
 			'prevHash' => $prevHash,
 			'timestamp' => self::get_timestamp(),
 			'counter' => (string)$counter,
 			'address' => $address,
-			#'publicKey' => 'TODO',
+			'publicKey' => $publicKey,
 		];
 		if($json) {
 			return json_encode($header,JSON_PRETTY_PRINT);
