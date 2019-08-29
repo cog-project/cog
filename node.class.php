@@ -47,7 +47,7 @@ class node {
 		}
 		$signature = $params['signature'];
 		unset($params['signature']);
-		if(!cog::verify_signature(json_encode($params),$signature,$params['params']['public_key'])) {
+		if(!cog::verify_signature(json_encode($params),$signature,$params['headers']['publicKey'])) {
 			throw new Exception("Failed to validate signature.\n".json_encode($params));
 		}
 	}
