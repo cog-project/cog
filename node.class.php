@@ -178,7 +178,9 @@ class node {
 				break;
 			case 'send':
 				// 1. Validate Address x Public Key - use RequestValidator
+				
 				// 2. Validate Signature x Public Key - use ReqeustValidator
+
 				// 3. Validate Transaction
 				if($params['params']['from'] != $params['headers']['address']) {
 				}

@@ -226,6 +226,8 @@ class wallet {
 
 			// Store Data		
 			$this->addNode($data);
+
+			return true;
 		} else {
 			// exception / alert
 		}

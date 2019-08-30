@@ -235,6 +235,11 @@ class network {
 		return $out;
 	}
 
+	public function hasAddress($addr) {
+		$transactions = $this->dbClient->queryByKey("{$this->db}.blocks",['request.headers.address' => $addr]);
+		return count($transactions) ? true : false;
+	}
+
 	public function validateTransaction($hash,$req) {
 		// TODO
 		$redundant = $this->dbClient->queryByKey("{$this->db}.blocks",['hash' => $hash]);
