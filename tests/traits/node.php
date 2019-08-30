@@ -72,7 +72,7 @@ trait nodeTests {
 		}
 		$req = new request('get_endpoints');
 		$res = $req->submitLocal();
-		$this->assertTrue(isset($res['data']));
+		$this->assertTrue(isset($res['data']),"No data field found in response:\n".print_r($res,1)."\nfor request:\n".request::$request);
 		$data = $res['data'];
 		$this->assertTrue(count($data) > 0,"Empty data field. Result:\n".print_r($res,1));
 		return $res;

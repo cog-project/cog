@@ -47,15 +47,16 @@ class node {
 		}
 		$signature = $params['signature'];
 		unset($params['signature']);
-		if(!cog::verify_signature(json_encode($params),$signature,$params['params']['public_key'])) {
+		if(!cog::verify_signature(json_encode($params),$signature,$params['headers']['publicKey'])) {
 			throw new Exception("Failed to validate signature.\n".json_encode($params));
 		}
 	}
 	public function processAction($params) {
 		$data = null;
-				
+
 		# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
 		$this->network->setDb($params['environment']);
+		$this->validateSignature($params);
 		
 		switch($params['action']) {
 			case 'blocks_count':

@@ -39,6 +39,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
+	protected $forks = [];
 
 	function setUp() {	
 		$this->testNetwork();
@@ -50,6 +51,10 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 	function tearDown() {
 		network::setInstance(null);
+
+		foreach($this->forks as $fork) {
+			\future::kill($fork);
+		}
 		
 		// Delete Collection
 		$this->delete_collection();
@@ -212,6 +217,27 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(count($rows) == 1);
 	}
 
+	function testSignEmpty() {
+		$wallet = $this->testWallet();
+		$req = [
+			'pkey' => $wallet->getPublicKey(),
+			'params' => [1]
+		];
+		$sig1 = $wallet->sign(json_encode($req));
+
+		$enc1 = json_encode($req);
+		$req['signature'] = $sig1;
+		$req = json_decode(json_encode($req),true);
+		$sig2 = $req['signature'];
+		unset($req['signature']);
+
+		$enc2 = json_encode($req);
+
+		$this->assertTrue(sha1($enc1) == sha1($enc2));
+		$verify = cog::verify_signature($enc2,$sig1,$req['pkey']);
+		$this->assertTrue($verify == 1,"Failed to verify signature.");
+	}
+
 	function testSignature() {
 		$wallet = $this->testWallet();
 		$req = ['pkey'=>$wallet->getPublicKey()];
@@ -237,10 +263,12 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$out = [];
 		for($port = 81; $port < 4096; $port++) {
 			cog::emit("Attempting to create process for port {$port}...\n");
-			$out['server'] = \future::start(
+			$proc = \future::start(
 				"passthru",
 				["php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port} 2>/dev/null"]
 			);
+			$this->forks[] = $proc;
+			$out['server'] = $proc;
 			$out['port'] = $port;
 			sleep(1);
 			$json = @file_get_contents("http://localhost:$port/server.php");

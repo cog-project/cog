@@ -11,6 +11,8 @@ class request {
 
 	protected $resultArray = [];
 
+	public static $request = null;
+
 	public function setNodes($nodes) {
 		$this->nodes = $nodes;
 	}
@@ -39,7 +41,7 @@ class request {
 		return json_encode($this->toArray());
 	}
 	public function getParams() {
-		if(empty($this->params)) return [1];
+		if(empty($this->params)) return ["1"];
 		else return $this->params;
 	}
 	public function setParams($data) {
@@ -56,7 +58,9 @@ class request {
 		curl_setopt($ch, CURLOPT_POST,true);
 		curl_setopt($ch, CURLOPT_URL,$url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+		$request_str = http_build_query($params);
+		self::$request = json_encode($params);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $request_str);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, false);
 		curl_setopt($ch, CURLOPT_PORT, (int)$port);
@@ -101,7 +105,8 @@ class request {
 				cog::generate_zero_hash(),
 				null,
 				cog::get_wallet()->getAddress(),
-				false
+				false,
+				cog::get_wallet()->getPublicKey()
 			);
 		}
 	}

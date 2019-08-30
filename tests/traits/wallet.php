@@ -61,13 +61,16 @@ trait walletTests {
 			'ip_address' => $ip,
 			'ip_port' => $port
 		]);
+		if(!$res['result']) {
+			emit(request::$request);
+		}
 		return $res;
 	}
 	function testAddNode($ip = 'localhost',$port = 80) {
 		$res = $this->addNode(null,$ip,$port);
 		
 		$this->assertTrue(is_array($res));
-		$this->assertTrue($res['result'] == 1);
+		$this->assertTrue($res['result'] == 1,"Result is not 1 in response:\n".print_r($res,1));
 		$this->assertTrue($res['message'] == 'OK');
 		$this->assertTrue(isset($res['time']));
 		$this->assertTrue(is_array($res['time']));
