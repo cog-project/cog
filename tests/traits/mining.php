@@ -6,8 +6,9 @@ trait miningTests {
 			$this->assertTrue(!empty($prevHash), "No prevHash (or zero-hash) provided.");
 			$this->assertTrue(!empty($address), "No address provided.");
 		}
-	*/	
-		$headers = cog::generate_header($prevHash,$counter,$address,false,$this->getPublicKey());
+	*/
+		$wallet = $this->testWallet();
+		$headers = cog::generate_header($prevHash,$counter,$address,false,$wallet->getPublicKey());
 		$hash = cog::generate_nonce($headers);
 		$verifyHash = cog::hash($headers);
 		$this->assertTrue($verifyHash == $hash,"Computed hash '$verifyHash', expected '$hash'");
