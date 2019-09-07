@@ -169,7 +169,7 @@ trait mongoTests {
 			} else {
 				$add['key_d'] = $rand3;
 			}
-			$headers = cog::generate_header(null,0,$addr,false);
+			$headers = cog::generate_header(null,0,$addr,false,'pkey');
 			$add = ['request' => $add];
 			$add['request']['headers'] = $headers;
 			$add['hash'] = cog::hash($add);
