@@ -194,17 +194,26 @@ trait walletTests {
 		$wallet = $this->testWallet();
 		$network = network::getInstance();
 		$hash = md5(rand());
-		$res1 = $network->getDbClient()->dbInsert("cogTest.blocks",[
+		$res1 = $network->getDbClient()->dbInsert("cogTest.endpoints",[
 			'hash' => $hash,
 			'headers' => [
 				'address' => $wallet->getParty()->getAddress()
 			],
+			'request' => [
+				'action' => 'send',
+				'params' => [
+					'inputs' => [
+						'from' => $wallet->getAddress(),
+						'to' => '909090909'
+					],
+				]
+			],
 			'foo' => 'bar'
 		]);
 		$summary = $wallet->getSummary('cogTest',$wallet->getParty()->getAddress());
-		$res = $network->getDbClient()->dbQuery("cogTest.blocks",[]);
-		emit($summary);
-		emit($res);
+		$res = $network->getDbClient()->dbQuery("cogTest.endpoints",[]);
+		$this->assertTrue(count($res) > 0,"No transactions found in database.");
+		$this->assertTrue(count($summary) > 0,"Completed transactions list is empty:\n".print_r($summary,1));
 	}
 }
 ?>
