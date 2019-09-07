@@ -13,10 +13,6 @@ class flat {
 
     #emit("Querying, {$db}.{$collection}: ".print_r([$query,$opts],1));
     $raw = $this->get_collection_data($db,$collection);
-if(!empty($raw)) {
-#cog::emit("Queried:\n".print_r([$db,$collection,$query,$opts,$raw],1));
-}
-#cog::emit(['full_query:',$query]);
     $this->filter($raw,$query);
     return $raw;
   }
@@ -46,16 +42,17 @@ if(!empty($raw)) {
   }
   public function get_match_rows($data,$key,$return_field = false) {
     $okey = $key;
-    if(preg_match("/./",$key)) {
-      $key = explode(".",$key);
-      $ikey = array_shift($key);
-    } else {
-      $ikey = $key;
-      $key = [];
-    }
     $out = [];
     $match_row = [];
     foreach($data as $i => $row) {
+      $key = $okey;
+      if(preg_match("/./",$key)) {
+        $key = explode(".",$key);
+        $ikey = array_shift($key);
+      } else {
+        $ikey = $key;
+        $key = [];
+      }
       if(!isset($row[$ikey])) {
         continue;
       }
@@ -133,10 +130,6 @@ if(!empty($raw)) {
 	  if(!in_array($v,$val)) return true;
 	}
 	return false;
-	# error_log(print_r(['val'=>$val,'match_rows'=>$match_rows,'[row]'=>[$row],'k'=>$k],1));
-	# return !count($match_rows);
-	# return !in_array($val,$match_rows);
-	# return !in_array($row[$k],$val);
         break;
     }
   }
