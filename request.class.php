@@ -4,6 +4,9 @@ class request {
 	protected $action = null;
 	protected $params = [];
 
+	protected $generated_params = [];
+	protected $generated_signature = [];
+
 	protected $server = null;
 	protected $port = null;
 
@@ -58,6 +61,7 @@ class request {
 		curl_setopt($ch, CURLOPT_POST,true);
 		curl_setopt($ch, CURLOPT_URL,$url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		
 		$request_str = http_build_query($params);
 		self::$request = json_encode($params);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $request_str);
@@ -95,38 +99,51 @@ class request {
 		return $assoc;
 	}
 	public function setHeaders($headers) {
-		$this->headers = $headers;
+		$this->headers = array_merge($this->headers,$headers);
+	}
+	public function setPrevHash($x) {
+		$this->headers['prevHash'] = $x;
+	}
+	public function getPrevHash() {
+		if(isset($this->headers['prevHash'])) {
+			return $this->headers['prevHash'];
+		} else return null;
 	}
 	public function getHeaders() {
-		if(!empty($this->headers)) {
-			return $this->headers;
-		} else {
-			return cog::generate_header(
-				cog::generate_zero_hash(),
-				null,
-				cog::get_wallet()->getAddress(),
-				false,
-				cog::get_wallet()->getPublicKey()
-			);
-		}
+		return cog::generate_header(
+			($this->getPrevHash() ? : cog::generate_zero_hash()),
+			null,
+			cog::get_wallet()->getAddress(),
+			false,
+			cog::get_wallet()->getPublicKey()
+		);
 	}
 	public function broadcast() {
 		$wallet = cog::get_wallet();
 		$nodes = $wallet->listNodes();
+
+		$this->generateParams();
 		
-		$params = $this->toArray();
-		$params['environment'] = network::getInstance()->getDb();
-		$sig = $wallet->sign($params);
-		$params['signature'] = $sig;
+		$params = $this->generated_params;
+		$sig = $this->generated_signature;
 
 		$results = [];
 		foreach($nodes as $node) {
 			$server = $node['ip_address'];
 			$port = $node['ip_port'];
-			$res = self::request($server,$port,$params,$return_raw);
+			$res = self::request($server,$port,['node_request'=>json_encode($params),'signature'=>$sig],$return_raw);
 			$results["{$server}:{$port}"] = $res;
 		}
 		return $results;
+	}
+	public function generateParams() {
+		$params = $this->toArray();
+		$params['environment'] = network::getInstance()->getDb();
+		$wallet = cog::get_wallet();
+		$sig = $wallet->sign($params);
+
+		$this->generated_params = $params;
+		$this->generated_signature = $sig;
 	}
 	public function submit($server = null,$port = null,$use_nodes = false,$return_raw = false) {
 		if(empty($server)) {
@@ -149,15 +166,15 @@ class request {
 			$nodes = [['ip_address'=>$server,'ip_port'=>$port]];
 		}
 
-		$params = $this->toArray();
-		$params['environment'] = network::getInstance()->getDb();
-		$sig = $wallet->sign($params);
-		$params['signature'] = $sig;
+		$this->generateParams();
+
+		$params = $this->generated_params;
+		$sig = $this->generated_signature;
 
 		foreach($nodes as $node) {
 			$server = $node['ip_address'];
 			$port = $node['ip_port'];
-			$res = self::request($server,$port,$params,$return_raw);
+			$res = self::request($server,$port,['node_request'=>json_encode($params),'signature'=>$sig],$return_raw);
 			if(is_array($res) && !$return_raw) {
 				return $res;
 			} elseif (is_object(json_decode($res)) && $return_raw) {
