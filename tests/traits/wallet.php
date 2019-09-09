@@ -61,9 +61,6 @@ trait walletTests {
 			'ip_address' => $ip,
 			'ip_port' => $port
 		]);
-		if(!$res['result']) {
-			emit(request::$request);
-		}
 		return $res;
 	}
 	function testAddNode($ip = 'localhost',$port = 80) {
