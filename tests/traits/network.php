@@ -19,7 +19,6 @@ trait networkTests {
 		);
 		if($new) {
 			$zeroHash = $this->testMineZeroNonce();
-			$this->assertTrue($n->getLastHash() == $zeroHash,"Expected: {$zeroHash}; Got: {$n->getLastHash()}");
 			$this->assertTrue($n->length() == 0);
 		}
 		return $n;
@@ -67,7 +66,6 @@ trait networkTests {
 		$len = $network->length();
 		$hash = $network->put($block);
 		$this->assertTrue(!empty($hash));
-		$last = $network->getLastHash();
 		
 		$db = $network->getDbClient();
 		$this->assertTrue(is_object($db));
