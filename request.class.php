@@ -87,16 +87,25 @@ class request {
 		}
 
 		$assoc = json_decode($res,true);
+		
 		if(!is_array($assoc)) {
 			cog::emit("Failed to decode response ({$url}).");
 			cog::emit("Request:\n".print_r($params,1));
 			cog::emit("Response:\n".$res);
+			return;
 		}
-		if(!empty($assoc['misc'])) {
-			cog::emit($assoc['misc']);
+
+		$resp = json_decode($assoc['server_response'],true);
+
+		if(!cog::verify_signature($assoc['server_response'],$assoc['signature'],$resp['headers']['publicKey'])) {
+			cog::emit("Failed to verify response signature.");
 		}
-		$assoc['time'] = $time;
-		return $assoc;
+
+		if(!empty($resp['misc'])) {
+			cog::emit($resp['misc']);
+		}
+		$resp['time'] = $time;
+		return $resp;
 	}
 	public function setHeaders($headers) {
 		$this->headers = array_merge($this->headers,$headers);

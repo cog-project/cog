@@ -254,6 +254,7 @@ class node {
 		$params = json_decode($raw,JSON_PRETTY_PRINT);
 		
 		$out = [
+			'headers' => cog::generate_header(null,0,$this->wallet->getAddress(),false,$this->wallet->getPublicKey()),
 			'result' => 1,
 		];
 
@@ -288,8 +289,13 @@ class node {
 		}
 		
 		$json = json_encode($out);
+
+		$response = json_encode([
+			'server_response' => $json,
+			'signature' => $this->wallet->sign($json)
+		]);
 		
-		echo $json;
+		echo $response;
 	}
 }
 ?>
