@@ -430,47 +430,10 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	}
 	
 	function testSmoke($terms = array()) {
+		$res = $this->nodeRequest();
+		$req = $res['_REQUEST'];
+		$req['request'] = json_decode($req['node_request']);
+		cog::emit($req);
 		return;
-
-		// Begin here if we're not debugging and delete everything above, thanks.
-	
-		/* TESTS/RULES/CAVEATS:
-		+ network's first prevHash should be zeroHash.
-		++ this should be assigned during object creation, retrieved from the database iff the working collection is empty.
-		++ thereafter, during initialization, network's first prevHash should :not: be zeroHash, nor should it be ever again.
-		- network "invite" command must involve one party: the inviting party.
-		++ the address, however, must be included in the terms.
-		++ we may also want to include the public key.
-		- To prevent nonce reuse/theft, we should precede the string used to generate the hash with 'cog' or something like that;
-		-- We also need to validate this.
-		- With the exception of the genesis block, party::buildContract() should be utilized.
-
-		- invite verification
-		-- may want to include public key
-		-- absolutely need to invite address
-		-- may wnat to verify count increment
-		-- and of course verify previous block is appropriate
-		--- also do this after adding blocks/contracts/whatever to the network
-		--- and signatures - absolutely positively must be verified
-		- comments
-		- messages
-		- dispute messages and the resolution process
-		- the whole granular architecture thing - should be able to dynamically update contracts, with approval of appropriate parties
-		*/
-				
-		# how does verification of this work in bitcoin?
-
-		$wallet = new wallet();
-
-		// Initliaze Database
-		$db = $this->testMongoCreateClient();
-		
-		$network = $this->testNetwork();
-		$master = $this->testParty();
-
-		$genesis = $this->testCreateGenesisBlock($master);
-		$this->testGenesisBlock($master,$genesis);
-
-		return; #architectural overhaul
 	}
 }
