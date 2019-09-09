@@ -11,7 +11,7 @@ class flat {
       return [];
     }
 
-    #emit("Querying, {$db}.{$collection}: ".print_r([$query,$opts],1));
+    #cog::emit("Querying, {$db}.{$collection}: ".print_r([$query,$opts],1));
     $raw = $this->get_collection_data($db,$collection);
 if(!empty($raw)) {
 #cog::emit("Queried:\n".print_r([$db,$collection,$query,$opts,$raw],1));
