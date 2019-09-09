@@ -131,15 +131,16 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$res = $req->submit('localhost','80',false,true);
 		$this->assertTrue(strlen($res) > 0,"No response from localhost:80.");
 		$assoc = json_decode($res,true);
-		$this->assertTrue(is_array($assoc), $res);
-		$this->assertTrue(isset($assoc['result']));
-		$this->assertTrue(isset($assoc['message']));
-		return $assoc;
+		$resp = json_decode($assoc['server_response'],true);
+		$this->assertTrue(is_array($resp), "Response is not an array:\n".print_r($resp,1));
+		$this->assertTrue(isset($resp['result']),"No result field found in response:\n".print_r($assoc,1));
+		$this->assertTrue(isset($resp['message']));
+		return $resp;
 	}
 	
 	function testServEmpty() {
 		$res = $this->nodeRequest();
-		$this->assertTrue(isset($res['result']));
+		$this->assertTrue(isset($res['result']),"No 'result' field found in response:\n".print_r($res,1));
 		$this->assertTrue(!$res['result']);
 		$this->assertTrue(empty($res['data']));
 		$this->assertTrue(!empty($res['message']));
