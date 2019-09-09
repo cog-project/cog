@@ -41,22 +41,11 @@ class node {
 			throw new Exception("No public key was specified.");
 		}
 	}
-	public function validateSignature($params) {
-		if(!isset($params['signature']) || empty($params['signature'])) {
-			throw new Exception("No signature was provided.");
-		}
-		$signature = $params['signature'];
-		unset($params['signature']);
-		if(!cog::verify_signature(json_encode($params),$signature,$params['headers']['publicKey'])) {
-			throw new Exception("Failed to validate signature.\n".json_encode($params));
-		}
-	}
 	public function processAction($params) {
 		$data = null;
 
 		# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
 		$this->network->setDb($params['environment']);
-		$this->validateSignature($params);
 		
 		switch($params['action']) {
 			case 'blocks_count':
@@ -162,14 +151,27 @@ class node {
 			case 'credit_info':
 				$data = $this->network->getCreditInfo($params['params']['address']);
 				break;
+			case 'addendum':
 			case 'contract':
+				$addendum = false;
+				if($params['action'] == 'addendum') {
+					$hash = $params['headers']['prevHash'];
+					$addendum = true;
+				} else {
+					// this hash should be derived from the raw json received, if at all...
+					// this concern also applies to ::put()
+					$hash = cog::hash($params);
+				}
+				
 				// validate
 				// put
-				$hash = cog::hash($params);
-				if(!$this->network->hasHash($hash)) {
+				$hasHash = $this->network->hasHash($hash);
+				if(!$hasHash && !$addendum) {
 					$res = $this->network->put($params);
 					// TODO re-broadcast recommended
 					// TODO validate against existing data and endpoints, update endpoints
+				} elseif($hasHash && $addendum) {
+					$res = $this->network->put($params);
 				} else {
 					$res = null;
 				}
@@ -185,6 +187,11 @@ class node {
 				// 3. Validate Transaction
 				if($params['params']['from'] != $params['headers']['address']) {
 				}
+				if(empty($params['params']['inputs'])) {
+					throw new Exception("No inputs were specified.");
+				} else {
+					// Validate endputs - use RequestValidator
+				}
 				// 4. Store Transaction
 				$hash = cog::hash($params);
 				if(!$this->network->hasHash($hash)) {
@@ -197,6 +204,41 @@ class node {
 				// 5. Update State - recalculate (safe) or just update incrementally (unsafe)
 				$data = $res;
 				break;
+			case 'sign':
+				// 1. Validation
+				// 2. Retrieve corresponding contract or addendum - probably part of validation
+				// 3. Extract hash, signature
+				// 4. Validate hash, signature - probably part of validation
+				// 5. Store
+				$hash = $params['params']['hash'];
+				$sig = $params['params']['signature'];
+				if(!cog::verify_signature($hash,$sig,$params['headers']['publicKey'])) {
+					throw new Exception("Failed to verify signature for contract.");
+				}
+				if($this->network->hasHash($hash)) {
+					$row = $this->network->get($hash);
+					// TODO sanitize all params before PUT.  Consider throwing an exception for superfluous parameters.
+					$this->network->put($params);
+				} else {
+					throw new Exception("Hash '$hash' not found.");
+				}
+				break;
+			case 'comment':
+				// 1. Validation
+				// 2. Retrieve corresponding contract or addendum - probably part of validation
+				// 3. Extract hash, signature
+				// 4. Validate hash, signature - probably part of validation
+				// 5. Store
+				$comment = $params['params']['comment'];
+				$hash = $params['params']['hash'];
+				if($this->network->hasHash($hash)) {
+					$row = $this->network->get($hash);
+					// TODO sanitize all params before PUT.  Consider throwing an exception for superfluous parameters.
+					$this->network->put($params);
+				} else {
+					throw new Exception("Hash '$hash' not found.");
+				}
+				break;
 			default:
 				throw new Exception("Action '{$params['action']}' was not found.");
 				break;
@@ -207,13 +249,23 @@ class node {
 		header('Content-Type: application/json');
 		
 		// TODO POST preferred, but we can worry about that later
-		$params = $_REQUEST;
+		$raw = $_REQUEST['node_request'];
+		$sig = $_REQUEST['signature'];
+		$params = json_decode($raw,JSON_PRETTY_PRINT);
 		
-		$out = [			
+		$out = [
 			'result' => 1,
 		];
 
 		try {
+
+			if(empty($sig)) {
+				throw new Exception("No signature was provided.");
+			}
+			if(!cog::verify_signature($raw,$sig,$params['headers']['publicKey'])) {
+				throw new Exception("Failed to validate signature.\n".json_encode($params));
+			}
+
 			$rv = new requestValidator($params);
 			$result = $rv->validate();
 			if(!$result) {

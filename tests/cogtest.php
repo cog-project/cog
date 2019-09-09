@@ -10,6 +10,7 @@ require 'traits/contract.php';
 require 'traits/mongo.php';
 require 'traits/wallet.php';
 require 'traits/node.php';
+require 'traits/bug.php';
 require 'functions.php';
 
 require 'phpunit/vendor/autoload.php';
@@ -36,6 +37,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	use miningTests;
 	use walletTests;
 	use nodeTests;
+	use bugTests;
 	
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
@@ -53,7 +55,8 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		network::setInstance(null);
 
 		foreach($this->forks as $fork) {
-			\future::kill($fork);
+		#	\future::kill($fork);
+			passthru("kill -9 {$fork[0]}");
 		}
 		
 		// Delete Collection
@@ -136,7 +139,9 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	
 	function testServEmpty() {
 		$res = $this->nodeRequest();
+		$this->assertTrue(isset($res['result']));
 		$this->assertTrue(!$res['result']);
+		$this->assertTrue(empty($res['data']));
 		$this->assertTrue(!empty($res['message']));
 		return $res;
 	}
@@ -150,7 +155,8 @@ class CogTest extends PHPUnit\Framework\TestCase {
 				emit($res);
 			}
 			$this->assertTrue(is_array($res),"Result is not an array. (".print_r($res,1).")");
-			$this->assertTrue(!empty($res['result']) == $bool,"Result flag does not match expected bool '$bool'.  Result:".print_r($res,1));
+			$this->assertTrue(isset($res['result']),'Result has no result flag.');
+			$this->assertTrue(!empty($res['result']) == $bool,"Result flag does not match expected bool '".($bool ? "true" : "false")."'.  Result:".print_r($res,1));
 			return $res;
 		}
 	}
@@ -178,15 +184,30 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(count($data) == 1);
 	}
 
-	function testSignContract() {
-		$a = $this->testWallet(); // Party A
-		$b = $this->testWallet(); // Party B
-		$c = $this->testWallet(); // Guarantor
-		$d = $this->testWallet(); // Arbitrator
+	function testCreateContract(
+		$a = null, # Party A
+		$b = null, # Party B
+		$c = null, # Party C
+		$d = null # Party D
+	) {
+		if(empty($a)) {
+			$a = $this->testWallet(); // Party A
+		}
+		if(empty($b)) {
+			$b = $this->testWallet(); // Party B
+		}
+		if(empty($c)) {
+			$c = $this->testWallet(); // Guarantor
+		}
+		if(empty($d)) {
+			$d = $this->testWallet(); // Arbitrator
+		}
 
+		# Initialization
 		$network = $this->testNetwork();
 		$db = $network->getDbClient();
-		
+
+		# Create Contract
 		$res = $this->testValidateRequest([
 			'action' => 'contract',
 			'params' => [
@@ -215,7 +236,124 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 		$rows = $db->dbQuery("cogTest.blocks",['request.action'=>'contract']);
 		$this->assertTrue(count($rows) == 1);
+
+		return reset($rows)['hash'];
 	}
+
+	function testSignContract() {
+		$a = $this->testWallet(); // Party A
+
+		$hash = $this->testCreateContract($a);
+
+		# Sign Contract
+		$params = [
+			'action' => 'sign',
+			'params' => [
+				'hash' => $hash,
+				'signature' => $a->sign($hash)
+			],
+		];
+
+		cog::set_wallet($a);
+		$res = $this->testValidateRequest($params);
+
+		$rows = $this->getDb()->dbQuery("cogTest.blocks",['request.action'=>'sign']);
+		$dbRows = $this->getDb()->dbQuery("cogTest.blocks",[]);
+		cog::set_wallet(null);
+		$this->assertTrue(count($rows) == 1,"Failed to find sign transaction in ".print_r($rows,1)."\nDB:\n".print_r($dbRows,1));
+	}
+
+	function testUpdateContract($hash = null,$a = null,$b = null,$c = null,$d = null) {
+		if(empty($hash)) {
+			$hash = $this->testCreateContract();
+		}
+		if(empty($a)) {
+			$a = $this->testWallet(); // Party A
+		}
+		if(empty($b)) {
+			$b = $this->testWallet(); // Party B
+		}
+		if(empty($c)) {
+			$c = $this->testWallet(); // Guarantor
+		}
+		if(empty($d)) {
+			$d = $this->testWallet(); // Arbitrator
+		}
+
+		# Update Contract
+
+		$params = [
+			'action' => 'addendum',
+			'params' => [
+				'inputs' => [
+					[
+						'from' => $a->getAddress(),
+						'to' => $b->getAddress(),
+						'amount' => 20,
+						'message' => 'do a barrel roll',
+						'deadline' => date('Y-m-d H:i:s',time()+15)
+					],
+					[
+						'from' => $a->getAddress(),
+						'to' => $c->getAddress(),
+						'amount' => 2,
+						'role' => 'arbitrator',
+					],
+					[
+						'from' => $a->getAddress(),
+						'to' => $d->getAddress(),
+						'amount' => 2,
+						'role' => 'guarantor',
+					]
+				],
+			],
+		];
+		cog::set_wallet($a);
+		$req = new request($params['action']);
+		$req->setPrevHash($hash);
+		$req->setParams($params['params']);
+		$res = $req->submit('localhost','80',false,true);
+		$dbRows = $this->getDb()->dbQuery("cogTest.blocks",[]);
+		$rows = $this->getDb()->dbQuery("cogTest.blocks",['request.action'=>'addendum']);
+		$this->assertTrue(count($rows) == 1,"Failed to find addendum transaction in ".print_r($rows,1)."\nDB:\n".print_r($dbRows,1));
+	}
+
+
+	function testInsert($db = "cogTest.blocks",$data = []) {
+		$network = $this->testNetwork();
+		$hash = $network->put($data,true);
+		$this->assertTrue(strlen($hash) > 0);
+		$row = $network->get($hash);
+		$this->assertTrue(!empty($hash));
+	}
+	
+	function testQuery($db = "cogTest.blocks",$query = []) {
+		$this->testInsert();
+		$network = $this->testNetwork();
+		$rows = $network->getDbClient()->dbQuery($db,$query);
+		$this->assertTrue(count($rows) > 0,"Failed to query rows in '$db'.  Query:\n".print_r($query,1));
+	}
+
+	function getDb() {
+		return $this->testNetwork()->getDbClient();
+	}
+
+	function testCommentContract($hash = null) {
+		# Comment on Contract
+		if(empty($hash)) {
+			$hash = $this->testCreateContract();
+		}
+		$res = $this->testValidateRequest([
+			'action' => 'comment',
+			'params' => [
+				'hash' => $hash,
+				'comment' => "test-comment",
+			],
+		]);
+		$rows = $this->getDb()->dbQuery("cogTest.blocks",['request.action'=>'comment']);
+		$all_rows = $this->getDb()->dbQuery("cogTest.blocks",[]);
+		$this->assertTrue(count($rows) == 1,"Number of contract comments queried does not equal 1 for contract '$hash'. (cogTest.blocks count: ".count($all_rows).")\n".print_r($rows,1)."\n".print_r($all_rows,2));
+	}	
 
 	function testSignEmpty() {
 		$wallet = $this->testWallet();
@@ -262,7 +400,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		require_once("../lib/future/future.php");
 		$out = [];
 		for($port = 81; $port < 4096; $port++) {
-			cog::emit("Attempting to create process for port {$port}...\n");
+			#cog::emit("Attempting to create process for port {$port}...\n");
 			$proc = \future::start(
 				"passthru",
 				["php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port} 2>/dev/null"]

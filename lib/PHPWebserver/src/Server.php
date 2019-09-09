@@ -96,7 +96,8 @@ class Server
 				if(\future::terminated($proc)) {
 					\future::wait($proc);
 					unset($procs[$i]);
-					\future::kill($proc);
+					#\future::kill($proc);
+					passthru("kill -9 {$proc[0]}");
 				}
 			}
 		}
