@@ -120,8 +120,8 @@ trait contractTests {
 		$hash = $this->testNetworkAdd($network,$genesis);
 
 		$network2 = $this->testNetwork();
-		$this->assertTrue($network2->getLastHash() != $zeroHash);
-		$this->assertTrue($network2->getLastHash() == $hash);
+		$ob = $network2->get($hash);
+		$this->assertTrue(!empty($ob));
 
 		return $hash;
 	}
