@@ -41,7 +41,7 @@ class node {
 			throw new Exception("No public key was specified.");
 		}
 	}
-	public function processAction($params) {
+	public function processAction($params,$newHash = null) {
 		$data = null;
 
 		# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
@@ -166,11 +166,14 @@ class node {
 				// validate
 				// put
 				$hasHash = $this->network->hasHash($hash);
+				if($addendum) {
+					$hasNewHash = $this->network->hasHash($newHash);
+				}
 				if(!$hasHash && !$addendum) {
 					$res = $this->network->put($params);
 					// TODO re-broadcast recommended
 					// TODO validate against existing data and endpoints, update endpoints
-				} elseif($hasHash && $addendum) {
+				} elseif($hasHash && $addendum && !$hasNewHash) {
 					$res = $this->network->put($params);
 				} else {
 					$res = null;
@@ -231,7 +234,7 @@ class node {
 				// 5. Store
 				$comment = $params['params']['comment'];
 				$hash = $params['params']['hash'];
-				if($this->network->hasHash($hash)) {
+				if(!$this->network->hasHash($hash)) {
 					$row = $this->network->get($hash);
 					// TODO sanitize all params before PUT.  Consider throwing an exception for superfluous parameters.
 					$this->network->put($params);
@@ -251,7 +254,7 @@ class node {
 		// TODO POST preferred, but we can worry about that later
 		$raw = $_REQUEST['node_request'];
 		$sig = $_REQUEST['signature'];
-		$params = json_decode($raw,JSON_PRETTY_PRINT);
+		$params = json_decode($raw,true);
 		
 		$out = [
 			'headers' => cog::generate_header(null,0,$this->wallet->getAddress(),false,$this->wallet->getPublicKey()),
@@ -259,7 +262,6 @@ class node {
 		];
 
 		try {
-
 			if(empty($sig)) {
 				throw new Exception("No signature was provided.");
 			}
@@ -272,7 +274,7 @@ class node {
 			if(!$result) {
 				throw new Exception($rv->getMessage());
 			}
-			$data = $this->processAction($params);
+			$data = $this->processAction($params,cog::hash($raW));
 			$out['message'] = 'OK';
 			if($data !== null) {
 				$out['data'] = $data;
