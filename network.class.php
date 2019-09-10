@@ -492,10 +492,7 @@ class network {
 	}
 
 	public function hasHash($hash) {
-		if(self::isZeroHash($hash)) {
-			return true;
-		}
-		$res = $this->dbClient->queryByKey("{$this->getDb()}.{$this->getCollection()}",['hash'=>$hash]);
+		$res = $this->dbClient->queryByKey("{$this->getDb()}.blocks",['hash'=>$hash]);
 		if(count($res)) {
 			return true;
 		} else {
@@ -503,7 +500,7 @@ class network {
 		}
 	}
 	public function get($hash) {
-		$res = $this->dbClient->queryByKey("{$this->getDb()}.{$this->getCollection()}",['hash'=>$hash]);
+		$res = $this->dbClient->queryByKey("{$this->getDb()}.blocks",['hash'=>$hash]);
 		if(count($res)) {
 			return array_shift($res);
 		} else {
