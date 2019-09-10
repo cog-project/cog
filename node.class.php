@@ -41,7 +41,11 @@ class node {
 			throw new Exception("No public key was specified.");
 		}
 	}
-	public function processAction($params,$newHash = null) {
+	public function processAction($params,$newHash = null) {		
+		if($this->network->hasHash($newHash)) {
+			throw new Exception("Hash '$hash' already exists.");
+		}
+		
 		$data = null;
 
 		# TODO when the daemon becomes a thing, this will need to be reset to the default, probably
@@ -234,7 +238,7 @@ class node {
 				// 5. Store
 				$comment = $params['params']['comment'];
 				$hash = $params['params']['hash'];
-				if(!$this->network->hasHash($hash)) {
+				if($this->network->hasHash($hash)) {
 					$row = $this->network->get($hash);
 					// TODO sanitize all params before PUT.  Consider throwing an exception for superfluous parameters.
 					$this->network->put($params);
@@ -274,7 +278,7 @@ class node {
 			if(!$result) {
 				throw new Exception($rv->getMessage());
 			}
-			$data = $this->processAction($params,cog::hash($raW));
+			$data = $this->processAction($params,cog::hash($raw));
 			$out['message'] = 'OK';
 			if($data !== null) {
 				$out['data'] = $data;
