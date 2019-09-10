@@ -63,7 +63,7 @@
       </tr>
       <?php } ?>
       <tr>
-        <td colspan=6>
+        <td colspan=3>
           <?php $config = $client->getConfig(); ?>
           <h3>
 	    Configure Local Node
@@ -74,19 +74,22 @@
 	    <?php } ?>
 	  </h3>
           <form action='client.php?expand=network' method='POST'>
-            <input type='text' name='config[ip_address]' placeholder='IP Address' value='<?=$config['ip_address'] ? : ""?>'>
-            <input type='text' name='config[ip_port]' placeholder='Port' size=5  value='<?=$config['ip_port'] ? : ""?>'>
-            <input type='text' name='config[nickname]' placeholder='Nickname (Optional)' size=15 value='<?=$config['nickname'] ? : ""?>'>
-
+            <input type='text' class='c2' name='config[ip_address]' placeholder='IP Address' value='<?=$config['ip_address'] ? : ""?>'>
+            <input type='text' class='c2' name='config[ip_port]' placeholder='Port' size=5  value='<?=$config['ip_port'] ? : ""?>'>
+            <input type='text' class='c2' name='config[nickname]' placeholder='Nickname (Optional)' size=15 value='<?=$config['nickname'] ? : ""?>'>
 	    <input type='hidden' name='config[public_key]' value='<?=$client->getPublicKey()?>'>
 	    <input type='hidden' name='config[address]' value='<?=$client->getAddress()?>'>
+	    <br/>
             <input type='submit' value='Update'>
           </form>
+	</td>
+	<td colspan=3>
           <h3>Add or Update Remote Node</h3>
           <form action='client.php?expand=network' method='POST'>
-            <input type='text' name='add_node[ip_address]' placeholder='IP Address'>
-            <input type='text' name='add_node[ip_port]' placeholder='Port' size=5>
-            <input type='text' name='add_node[nickname]' placeholder='Nickname (Optional)' size=15>
+            <input type='text' class='c2' name='add_node[ip_address]' placeholder='IP Address'>
+            <input type='text' class='c2' name='add_node[ip_port]' placeholder='Port' size=5>
+            <input type='text' class='c2' name='add_node[nickname]' placeholder='Nickname (Optional)' size=15>
+	    <br/>
             <input type='submit' value='Add'>
           </form>
         </td>
