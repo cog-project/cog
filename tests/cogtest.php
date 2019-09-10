@@ -237,7 +237,6 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 		$rows = $db->dbQuery("cogTest.blocks",['request.action'=>'contract']);
 		$this->assertTrue(count($rows) == 1);
-
 		return reset($rows)['hash'];
 	}
 
@@ -344,6 +343,12 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		if(empty($hash)) {
 			$hash = $this->testCreateContract();
 		}
+		
+		$network = $this->testNetwork();
+		$row = $network->get($hash);
+		$this->assertTrue(is_array($row));
+		$this->assertTrue(count($row) > 0);
+		
 		$res = $this->testValidateRequest([
 			'action' => 'comment',
 			'params' => [
