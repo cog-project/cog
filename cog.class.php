@@ -25,7 +25,13 @@ class cog {
 		return $nonce;
 	}
 
-	static function generate_header($prevHash = null,$counter = 0,$address = null,$json = true,$publicKey) {
+	static function generate_header(
+		string	$prevHash = null,
+		int	$counter = 0,
+		string	$address = null,
+		bool	$json = true,
+		string	$publicKey
+	) {
 		$header = [
 			'version' => self::$version,
 			'prevHash' => $prevHash,
