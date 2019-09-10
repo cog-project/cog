@@ -26,6 +26,10 @@ input[type="text"] {
    font-size:100%;
    width:400px;
 }
+input.c2[type="text"] {
+   font-size:100%;
+   width:200px;
+}
 details > h2 {
     border-bottom: 1px solid #DDD;
 }
