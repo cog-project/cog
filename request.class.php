@@ -121,7 +121,7 @@ class request {
 	public function getHeaders() {
 		return cog::generate_header(
 			($this->getPrevHash() ? : cog::generate_zero_hash()),
-			null,
+			0,
 			cog::get_wallet()->getAddress(),
 			false,
 			cog::get_wallet()->getPublicKey()
