@@ -90,14 +90,13 @@ class Server
 			// listen for connections
 			socket_listen( $this->socket );
 
-			$procs[] = \future::start([$this,"proc"],[$this->socket,$callback]);
+			$newProc = \future::start([$this,"proc"],[$this->socket,$callback]);
+			$procs[] = $newProc;
 
 			foreach($procs as $i => $proc) {
 				if(\future::terminated($proc)) {
 					\future::wait($proc);
 					unset($procs[$i]);
-					#\future::kill($proc);
-					passthru("kill -9 {$proc[0]}");
 				}
 			}
 		}
