@@ -173,10 +173,12 @@ class node {
 				if($addendum) {
 					$hasNewHash = $this->network->hasHash($newHash);
 				}
+				// New Contract
 				if(!$hasHash && !$addendum) {
 					$res = $this->network->put($params);
 					// TODO re-broadcast recommended
 					// TODO validate against existing data and endpoints, update endpoints
+				// New Addendum
 				} elseif($hasHash && $addendum && !$hasNewHash) {
 					$res = $this->network->put($params);
 				} else {
