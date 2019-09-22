@@ -400,6 +400,9 @@ class network {
 	}
 
 	public function put($data,$return_hash = false) {
+		if(empty($data)) {
+			throw new Exception("Attempted to store empty object.");
+		}
 		$insert = [
 			'hash' => cog::hash($data),
 			'request' => $data,
