@@ -146,7 +146,7 @@ class flat {
             $res_rows = [];
             foreach($data as $row) {
               $data2 = [$row];
-              $this->filter($data2,$vv);
+              $this->filter($data2,[$kk => $vv]); # Previously ", $vv)"
               $res_rows = $data2;
             }
             if(empty($res_rows)) {
