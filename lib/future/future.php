@@ -45,11 +45,19 @@ class future
 		if($pid == -1) die('cannot fork');
 		elseif($pid)
 		{
+			// Parent Fork.
+			
 			socket_close($writer);
+			
+			$path = dirname(__FILE__)."/".getmypid().".pid";
+			passthru("echo {$pid} >> $path");
+			
 			return array($pid,$reader);
 		}
 		else
 		{
+			// Child Fork.
+			
 			socket_close($reader);
 			$result = call_user_func_array($f,$args);
 			$str = serialize($result);
@@ -85,13 +93,27 @@ class future
 		pcntl_waitpid($info[0], $status);
 		socket_close($info[1]);
 		future::$substitutes[$info[0]] = $out;
+		future::kill($info);
 		return $out;
 	}
 
 	function kill($info) {
-		passthru("kill -9 {$info[0]}");
+		$pid = intval($info[0]);
+#	echo("Killing {$pid} (parent ".getmypid().")\n");
+		exec("kill -9 $pid");
+		$path = dirname(__FILE__)."/{$pid}.pid";
+		if(file_exists($path)) {
+#	echo("Killing processes in registry '$path'\n");
+			$children = explode("\n",file_get_contents($path));
+#	print_r($children);
+			unlink($path);
+			foreach($children as $pid) {
+				if((int)$pid)
+					future::kill([(int)$pid]);
+			}
+		}
 		# alt: pcntl_waitpid($child_pid, $a, WNOHANG|WUNTRACED);
-	}				 
+	}
 
 	/*
 	 * Returns 1 if a future is still running, or 0 if it has completed. 

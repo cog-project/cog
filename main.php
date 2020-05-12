@@ -32,6 +32,10 @@ require dirname(__FILE__).'/request_validator.class.php';
 require dirname(__FILE__).'/type_hinting.class.php';
 require dirname(__FILE__).'/lib/curl-emulator/curlemu.php';
 require dirname(__FILE__).'/lib/flat/flat.class.php';
+require dirname(__FILE__).'/lib/PHPSandbox/vendor/autoload.php';
+require dirname(__FILE__).'/lib/future/future.php';
+
+#use \PHPSandbox\PHPSandbox;
 
 $reqExt = [
 ];

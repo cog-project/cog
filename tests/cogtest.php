@@ -320,6 +320,9 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 
 	function testInsert($db = "cogTest.blocks",$data = []) {
+		if(empty($data)) {
+			$data = [1]; // do something about the rejection of empty objects for this test
+		}
 		$network = $this->testNetwork();
 		$hash = $network->put($data,true);
 		$this->assertTrue(strlen($hash) > 0);
@@ -332,6 +335,7 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$network = $this->testNetwork();
 		$rows = $network->getDbClient()->dbQuery($db,$query);
 		$this->assertTrue(count($rows) > 0,"Failed to query rows in '$db'.  Query:\n".print_r($query,1));
+		return $rows;
 	}
 
 	function getDb() {
@@ -404,20 +408,33 @@ class CogTest extends PHPUnit\Framework\TestCase {
 
 	function testStandaloneServer() {
 		require_once("../lib/future/future.php");
+
+$ctx = stream_context_create(array('http'=>
+    array(
+        'timeout' => 5, #seconds
+    )
+));
+
 		$out = [];
+		$newProcs = [];
 		for($port = 81; $port < 4096; $port++) {
-			#cog::emit("Attempting to create process for port {$port}...\n");
-			$proc = \future::start(
-				"passthru",
-				["php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port} 2>/dev/null"]
-			);
-			$this->forks[] = $proc;
+			cog::emit("Attempting to create process for port {$port}...\n");
+			$pid = shell_exec("php ".dirname(__FILE__)."/../lib/http-standalone/test2.php {$port} >/dev/null 2>/dev/null & echo $!");
+			$proc = [$pid];
 			$out['server'] = $proc;
 			$out['port'] = $port;
 			sleep(1);
-			$json = @file_get_contents("http://localhost:$port/server.php");
+			$json = file_get_contents("http://localhost:$port/server.php",false,$ctx);
 			$res = json_decode($json,true);
-			if(is_array($res)) break;
+			if(is_array($res)) {
+				emit("Created standalone server at port {$port} with process ID {$pid}.");
+				$this->forks[] = $proc;
+				foreach($newProcs as $rm) {
+					\future::kill($rm);
+				}
+				break;
+			}
+			$newProcs[] = $proc;
 		}
 		return $out;
 	}
@@ -433,6 +450,25 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		-- with request to this it may be advisable to create server b after the request.
 		*/
 	}
+
+	function testStandaloneServerKill() {
+	  $srv = $this->testStandaloneServer();
+	  \future::kill($srv['server']);
+	  $out = shell_exec("ps aux|grep test2");
+	  $rows = explode("\n",$out);
+	  $success = true;
+	  foreach($rows as $row) {
+	    if(!preg_match("/test2.php/",$row)) continue;
+	    preg_match("/[a-zA-Z0-9_]+\s+(\d+)\s+/",$row,$matches);
+	    if(!isset($matches[1])) continue;
+	    $pid = $matches[1];
+	    if(strlen($pid)) {
+	      $res = passthru("kill -9 {$pid}",$rv);
+	      if($rv == 0) $success = false;
+	    }
+	  }
+	  $this->assertTrue($success,"Orphan processes remain.");
+	}
 	
 	function testSmoke($terms = array()) {
 		$res = $this->nodeRequest();
@@ -440,5 +476,130 @@ class CogTest extends PHPUnit\Framework\TestCase {
 		$req['request'] = json_decode($req['node_request']);
 		cog::emit($req);
 		return;
+	}
+
+	// boilerplate for cog smart contracts
+
+function run_contract($script,$contract,$context,$block) {
+	$input = "<?php
+	  \$contract = json_decode(base64_decode('".base64_encode(json_encode($contract))."'));
+	  \$context = json_decode(base64_decode('".base64_encode(json_encode($context))."'));
+	  \$block = json_decode(base64_decode('".base64_encode(json_encode($block))."'));
+	?>";
+
+
+	$x = new \PHPSandbox\PHPSandbox();
+	$x->setOptions([
+	  'capture_output' => true,
+	  'allow_closures' => true,
+	  'allow_escaping' => true, # for phpunit, at least
+	]);
+
+	$x->whitelistFunc([
+	  'base64_decode',
+	  'base64_encode',
+	  'date',
+	  'json_decode',
+	  'json_encode',
+	  'microtime',
+	  'print_r',
+	  'sha1',
+	]);
+
+	$x->whitelistConst([
+	  'JSON_PRETTY_PRINT',
+	]);
+
+	$x->whitelistType([
+	  'Exception'
+	]);
+
+	try {
+	  $res = $x->execute("$input\n$script");
+	  $json = json_decode($res,JSON_PRETTY_PRINT);
+	  if(!is_array($json)) {
+	    throw new Exception("cog: Failed to parse JSON.\n\nOutput:\n".print_r($res,1));
+	  }
+	  $success = true;
+	  $message = null;
+	} catch (Exception $e) {
+	  $success = false;
+	  $json = null;
+	  $message = "{$e->getMessage()}\n{$e->getTraceAsString()}";
+	}
+
+	$out = ['result' => (int)$success, 'output' => $json, 'message' => $message];
+	return $out;
+}
+
+	function testSmartContract() {
+		$network = $this->testNetwork();
+		$wallet = $this->testWallet();
+				
+		# Create Contract
+		$res = $this->testValidateRequest([
+			'action' => 'contract',
+			'params' => [
+				'script' =>
+'
+<?php
+/*
+*	@name	coin
+*	@author	michael lesane <df7c376196ca384ada0cccdd54727b8167c71ad20d3a00f88def200c57a282b7>
+*	@desc	a demonstration of blockchain-powered coin functionality within the context of the cog project
+*/
+$out = [$contract,$context,$block];
+echo json_encode($out,JSON_PRETTY_PRINT);
+?>
+'
+			],
+		]);
+
+		cog::emit($res);die();
+
+		$results = $network->getDbClient()->dbQuery("cogTest.blocks",[
+			'$and' => [
+				'request.action' => 'contract',
+				'request.params.script' => ['$exists' => true]
+			]
+		]);
+		$this->assertTrue(count($results) == 1);
+
+		# TODO it works, but we're getting warnings.
+		
+		$contract = reset($results);
+		$script = $contract['request']['params']['script'];
+		$context = cog::generate_header($contract['hash'],0,$wallet->getAddress(),false,$wallet->getPublicKey());
+		$block = [];
+		
+		$timeout = 1;
+		
+		$proc = \future::start([$this,'run_contract'],[$script,$contract,$context,$block]);
+		$start_time = microtime(true);
+		$out = null;
+		try {
+			while(1) {
+				$current_time = microtime(true);
+				$check = \future::check($proc);
+				if(!$check) {
+					$out = \future::wait($proc);
+					break;
+				}
+				$elapsed = $current_time - $start_time;
+				if($elapsed > 1) {
+#					$status = 
+					\future::kill($proc);
+					throw new Exception('Execution timeout.');
+				}
+				usleep(1000);
+			}
+		} catch (Exception $e) {
+			$message = "{$e->getMessage()}\n{$e->getTraceAsString()}";
+			$out = ['result' => 0, 'output' => null, 'message' => $message];
+			\future::kill($proc);
+		}
+		$this->assertTrue(is_null($e));
+		cog::emit($out);
+		$this->assertTrue(!empty($out));
 	}
 }

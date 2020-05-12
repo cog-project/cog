@@ -24,7 +24,7 @@ $server = new Server('127.0.0.1', $port);
 $server->listen(function(Request $request, $client) {
 
 	echo $request->method() . ' ' . $request->uri() . "\n";
-	print_r($request);
+	#print_r($request);
 	$get = $request->parameters;
 
 	$post = [];
