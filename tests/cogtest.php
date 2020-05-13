@@ -407,6 +407,9 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	}
 
 	function testStandaloneServer() {
+	  $backtrace = debug_backtrace(false);
+	  $killOnCompletion = false;
+	  if($backtrace[1]['class'] == 'ReflectionMethod') $killOnCompletion = true;
 		require_once("../lib/future/future.php");
 
 $ctx = stream_context_create(array('http'=>
@@ -436,6 +439,7 @@ $ctx = stream_context_create(array('http'=>
 			}
 			$newProcs[] = $proc;
 		}
+		if($killOnCompletion) \future::kill($out['server']);
 		return $out;
 	}
 
@@ -443,6 +447,8 @@ $ctx = stream_context_create(array('http'=>
 		require_once("../lib/future/future.php");
 		$a = $this->testStandaloneServer();
 		$b = $this->testStandaloneServer();
+		\future::kill($a['server']);
+		\future::kill($b['server']);
 
 		/* TODO:
 		- simulate multiple databases
@@ -457,6 +463,7 @@ $ctx = stream_context_create(array('http'=>
 	  $out = shell_exec("ps aux|grep test2");
 	  $rows = explode("\n",$out);
 	  $success = true;
+	  $rem = [];
 	  foreach($rows as $row) {
 	    if(!preg_match("/test2.php/",$row)) continue;
 	    preg_match("/[a-zA-Z0-9_]+\s+(\d+)\s+/",$row,$matches);
@@ -464,10 +471,13 @@ $ctx = stream_context_create(array('http'=>
 	    $pid = $matches[1];
 	    if(strlen($pid)) {
 	      $res = passthru("kill -9 {$pid}",$rv);
-	      if($rv == 0) $success = false;
+	      if($rv == 0) {
+	        $success = false;
+		$rem[] = $pid;
+	      }
 	    }
 	  }
-	  $this->assertTrue($success,"Orphan processes remain.");
+	  $this->assertTrue($success,"Orphan processes remain (".implode(",",$rem).").");
 	}
 	
 	function testSmoke($terms = array()) {
@@ -533,6 +543,7 @@ function run_contract($script,$contract,$context,$block) {
 }
 
 	function testSmartContract() {
+	$this->markTestSkipped("In progress.");
 		$network = $this->testNetwork();
 		$wallet = $this->testWallet();
 				
