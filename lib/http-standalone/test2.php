@@ -19,7 +19,7 @@ if (empty($argv)) {
 	$port = array_shift($argv);
 }
 
-$server = new Server('127.0.0.1', $port);
+$server = new Server('0.0.0.0', $port);
 
 $server->listen(function(Request $request, $client) {
 
