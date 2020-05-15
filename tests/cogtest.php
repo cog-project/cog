@@ -42,6 +42,11 @@ class CogTest extends PHPUnit\Framework\TestCase {
 	// No heavy mining in testing, so we can just use integers.
 	protected $counter = 0;
 	protected $forks = [];
+	protected $port = 80;
+
+	function setPort($ip) {
+		$this->port = $ip;
+	}
 
 	function setUp() {	
 		$this->testNetwork();
@@ -612,5 +617,26 @@ echo json_encode($out,JSON_PRETTY_PRINT);
 		$this->assertTrue(is_null($e));
 		cog::emit($out);
 		$this->assertTrue(!empty($out));
+	}
+
+	function testStandaloneSuite() {
+		$srv = $this->testStandaloneServer();
+		$port = $srv['port'];
+		$test = new cogTest();
+		$test->setPort($port);
+		$funcs = get_class_methods($test);
+		foreach($funcs as $func) {
+		  try {
+		    if(!preg_match("/^test/",$func)) continue;
+		    if(preg_match("/^testStandaloneSuite/",$func)) continue;
+		    emit($func);
+		    $test->setUp();
+		    $test->$func();
+		    $test->tearDown();
+		  } catch(Exception $e) {
+		    emit($e->getMessage());
+		  }
+		}
+		\future::kill($srv['server']);
 	}
 }
