@@ -53,7 +53,7 @@ $creditSummary = $creditInfo;
       ?>
       <tr>
         <td>
-	  <?=$nodeNames[$addr] ? : 'N/A'?>
+	  <?=isset($nodeNames[$addr]) ? $nodeNames[$addr] : 'N/A'?>
 	</td>
         <td>
 	  <a href='?transaction_history=<?=$addr?>'>

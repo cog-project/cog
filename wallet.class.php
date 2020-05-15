@@ -311,8 +311,10 @@ class wallet {
 		$agg = [];
 
 		foreach($creditInfo as $transaction) {
-		  foreach($transaction['request']['params']['inputs'] as $input) {
-		    $agg[] = $input + ['timestamp' => $transaction['request']['headers']['timestamp']];
+		  if(isset($transaction['request']['params']['inputs'])) {
+		    foreach($transaction['request']['params']['inputs'] as $input) {
+		      $agg[] = $input + ['timestamp' => $transaction['request']['headers']['timestamp']];
+		    }
 		  }
 		}
 
@@ -329,6 +331,10 @@ class wallet {
 
 		foreach($agg as $input) {
 		  $other = null;
+		  if (!isset($input['from'])) {
+		    // probably a contract - please identify a better way of doing this
+		    continue;
+		  }
 		  if ($input['to'] == $this->getAddress()) {
 		    $other = trim($input['from']);
 		    $amt = $input['amount'];

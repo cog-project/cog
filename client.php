@@ -11,6 +11,12 @@ shell_exec("git fetch https://github.com/cog-project/cog.git");
 ### TODO find pernanent location for environment default ###
 
 $network = new network();
+
+if(!isset($_SERVER['HTTP_HOST'])) {
+  // Likely running from test2.php TODO do something permanent with this
+  $_SERVER['HTTP_HOST'] = 'localhost';
+}
+
 if( ($_SERVER['HTTP_HOST'] == '127.0.0.1' || $_SERVER['HTTP_HOST'] == 'localhost')
     && isset($_REQUEST['environment'])
   ) {
